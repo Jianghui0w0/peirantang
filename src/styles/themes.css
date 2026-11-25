@@ -1,589 +1,295 @@
 /* ============================================================
-   双主题皮肤层：宣纸水墨（ink） / 希腊夜空（cosmos）
-   ------------------------------------------------------------
-   挂载点：document.documentElement[data-theme]
-   设计意图：
-     · ink     —— 中国古典：暖纸白底、墨色文字、朱砂点色、山水剪影
-     · cosmos  —— 希腊占星：深夜星空、星金文字、发光星座、碑刻式公告排版
-   本文件只定义皮肤，不改变任何业务布局与信息结构。
-   ============================================================ */
+ * 双主题体系 · 天枢
+ * ------------------------------------------------------------
+ * 1) [data-theme='ink']     宣纸雅集（阴阳线 · 大杂烩线 · 首页）
+ * 2) [data-theme='cosmos']  希腊星空（希腊占星对照线）
+ *    注：两套主题共享同一套语义 CSS 变量，无须粗暴的 !important 覆盖。
+ * ============================================================ */
 
-/* ---------- 字体族 ---------- */
-:root {
-  --font-song: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
-  --font-stone: 'Cinzel', 'Noto Serif SC', serif;
-  --font-classic: 'Cormorant Garamond', 'Noto Serif SC', serif;
-}
-
-/* ============================================================
-   一、宣纸水墨主题（默认）
-   ============================================================ */
 [data-theme='ink'],
 .theme-ink {
-  --background: hsl(40 34% 97%);
-  --foreground: hsl(30 14% 13%);
-  --card: hsl(40 38% 99% / 0.84);
-  --card-foreground: hsl(30 14% 13%);
-  --popover: hsl(40 38% 99%);
-  --popover-foreground: hsl(30 14% 13%);
-
-  --primary: hsl(356 70% 40%);
-  --primary-foreground: hsl(40 38% 99%);
-
-  --secondary: hsl(38 22% 92%);
-  --secondary-foreground: hsl(30 14% 20%);
-
-  --muted: hsl(38 22% 93%);
-  --muted-foreground: hsl(30 9% 43%);
-
-  --accent: hsl(38 26% 90%);
-  --accent-foreground: hsl(30 14% 18%);
-
-  --border: hsl(35 14% 82%);
-
-  --ink-wash: rgba(28, 26, 22, 0.62);
-  --ink-scenery-opacity: 0.5;
-
-  --font-display: var(--font-song);
-  --font-prose: var(--font-song);
-  /* 报告正文：宋体，接近原「书籍感」 */
-  --font-report-display: var(--font-sans);
+  color-scheme: light;
 }
 
-/* ============================================================
-   二、希腊夜空主题
-   ============================================================ */
 [data-theme='cosmos'],
 .theme-cosmos {
   color-scheme: dark;
-  --background: hsl(228 44% 6%);
-  --foreground: hsl(42 52% 88%);
-  --card: hsl(228 38% 10% / 0.74);
-  --card-foreground: hsl(42 52% 88%);
-  --popover: hsl(228 38% 10%);
-  --popover-foreground: hsl(42 52% 88%);
 
-  --primary: hsl(42 76% 62%);
-  --primary-foreground: hsl(228 44% 8%);
+  --background: #0A0F1C;
+  --foreground: #EEE7D7;
+  --card: #111829;
+  --card-foreground: #EEE7D7;
+  --card-border: rgba(212, 175, 105, 0.22);
+  --popover: #141D31;
+  --popover-foreground: #EEE7D7;
 
-  --secondary: hsl(228 32% 16%);
-  --secondary-foreground: hsl(42 40% 84%);
+  --primary: #D9AE5F;
+  --primary-foreground: #0A0F1C;
+  --secondary: #182238;
+  --secondary-foreground: #E5DDC8;
+  --muted: #161F33;
+  --muted-foreground: #A0A9BE;
+  --accent: #1D2842;
+  --accent-foreground: #F4EFE3;
 
-  --muted: hsl(228 30% 14%);
-  --muted-foreground: hsl(42 16% 62%);
+  --border: rgba(212, 175, 105, 0.22);
+  --input: rgba(212, 175, 105, 0.28);
+  --ring: #D9AE5F;
 
-  --accent: hsl(228 32% 17%);
-  --accent-foreground: hsl(42 46% 88%);
+  --destructive: #E56E66;
+  --destructive-foreground: #0A0F1C;
 
-  --border: hsl(42 26% 34% / 0.42);
+  --semantic-useful: #4AC18A;
+  --semantic-useful-bg: rgba(74, 193, 138, 0.12);
+  --semantic-useful-border: rgba(74, 193, 138, 0.40);
 
-  --ink-wash: rgba(240, 227, 194, 0.5);
-  --ink-scenery-opacity: 0;
+  --semantic-taboo: #E8746C;
+  --semantic-taboo-bg: rgba(232, 116, 108, 0.11);
+  --semantic-taboo-border: rgba(232, 116, 108, 0.40);
 
-  --font-display: var(--font-stone);
-  --font-prose: var(--font-classic);
-  --font-report-display: var(--font-stone);
+  --semantic-amber: #E5BA64;
+  --semantic-amber-bg: rgba(229, 186, 100, 0.12);
+  --semantic-amber-border: rgba(229, 186, 100, 0.38);
+
+  --semantic-sky: #7CC0DF;
+  --semantic-sky-bg: rgba(124, 192, 223, 0.11);
+  --semantic-sky-border: rgba(124, 192, 223, 0.38);
+
+  --semantic-neutral: #98A3B6;
+
+  --el-wood: #5BB97B;
+  --el-fire: #EC765C;
+  --el-earth: #DFAD4B;
+  --el-metal: #A2AEBC;
+  --el-water: #69A8E2;
+
+  --qi-yang: #EF9643;
+  --qi-yin: #76A7E4;
+
+  --chart-curve: #EAE3D5;
+  --chart-ideal: #4FD1C5;
+  --chart-grid: rgba(212, 175, 105, 0.16);
+  --chart-axis: #9DA7BE;
+  --chart-ghost: #7986A0;
+  --chart-node-bg: #111829;
+  --chart-area-tint: rgba(217, 174, 95, 0.08);
+
+  --button-outline: rgba(212, 175, 105, 0.38);
+  --badge-outline: rgba(212, 175, 105, 0.28);
+  --elevate-1: rgba(238, 231, 215, 0.05);
+  --elevate-2: rgba(238, 231, 215, 0.09);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.55);
 }
 
-/* ---------- 主题切换过渡 ---------- */
-html,
-body {
-  transition:
-    background-color 900ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    color 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+/* 主题切换平滑过渡 */
+.theme-root {
+  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.55s ease, color 0.35s ease;
 }
 
+/* ============================================================
+ * 背景布景层（宣纸山水 / 星空星域）
+ * ============================================================ */
 .theme-skin {
   position: fixed;
   inset: 0;
-  z-index: 0;
   pointer-events: none;
-  transition: opacity 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: opacity;
+  z-index: 0;
+  overflow: hidden;
+  transition: opacity 0.65s ease;
 }
 
-/* ============================================================
-   三、宣纸肌理与山水剪影
-   ============================================================ */
-
-/* 纸纤维：极细的横向纹 + 噪点，仅 ink 主题可见 */
+/* 宣纸纸肌：极淡细密纸纹 + 四角微曦 */
 .ink-paper {
   position: absolute;
   inset: 0;
-  opacity: 1;
   background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(120, 104, 84, 0.035) 0px,
-      rgba(120, 104, 84, 0.035) 1px,
-      transparent 1px,
-      transparent 3px
-    ),
-    radial-gradient(circle at 18% 12%, rgba(120, 104, 84, 0.05), transparent 42%),
-    radial-gradient(circle at 82% 78%, rgba(120, 104, 84, 0.045), transparent 46%);
+    radial-gradient(ellipse 100% 70% at 12% 4%, rgba(255, 253, 248, 0.85), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 88% 92%, rgba(226, 216, 198, 0.42), transparent 65%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.26  0 0 0 0 0.22  0 0 0 0 0.16  0 0 0 0.028 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.9;
 }
 
-/* 山水剪影缓慢呼吸 */
+/* 宣纸动画 */
 @keyframes ink-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -6px, 0);
-  }
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-12px); }
 }
 
-/* 野鹤振翅微浮 */
 @keyframes crane-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate3d(6px, -8px, 0) rotate(-1.2deg);
-  }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(12px, -5px); }
 }
 
 .ink-drift-slow {
-  animation: ink-drift 26s ease-in-out infinite;
+  animation: ink-drift 42s ease-in-out infinite;
 }
+
 .ink-drift-slower {
-  animation: ink-drift 38s ease-in-out infinite;
+  animation: ink-drift 64s ease-in-out infinite reverse;
 }
+
 .crane-float {
-  animation: crane-float 14s ease-in-out infinite;
+  animation: crane-float 18s ease-in-out infinite;
 }
 
-/* ============================================================
-   四、星空
-   ============================================================ */
-
+/* 星空底层 */
 .cosmos-sky {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 52% at 50% 8%, rgba(58, 82, 138, 0.22), transparent 68%),
-    radial-gradient(ellipse 46% 38% at 82% 72%, rgba(96, 66, 128, 0.16), transparent 70%),
-    radial-gradient(ellipse 40% 34% at 14% 64%, rgba(36, 92, 120, 0.14), transparent 72%),
-    linear-gradient(180deg, hsl(228 46% 7%) 0%, hsl(230 42% 5%) 46%, hsl(226 38% 4%) 100%);
+    radial-gradient(ellipse 80% 58% at 22% 16%, rgba(44, 68, 128, 0.28), transparent 60%),
+    radial-gradient(ellipse 68% 52% at 82% 76%, rgba(164, 128, 66, 0.10), transparent 62%),
+    radial-gradient(ellipse 95% 80% at 50% 42%, #0F172B 0%, #0A0F1C 72%, #060912 100%);
 }
 
-/* 星点：三层不同密度与大小 */
+.cosmos-milkyway {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    132deg,
+    transparent 32%,
+    rgba(136, 166, 224, 0.04) 44%,
+    rgba(218, 188, 130, 0.055) 50%,
+    rgba(136, 166, 224, 0.035) 56%,
+    transparent 68%
+  );
+  filter: blur(20px);
+}
+
 .cosmos-stars {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(1px 1px at 12% 18%, rgba(255, 246, 220, 0.9), transparent),
-    radial-gradient(1px 1px at 28% 42%, rgba(255, 246, 220, 0.66), transparent),
-    radial-gradient(1.4px 1.4px at 44% 12%, rgba(255, 250, 232, 0.95), transparent),
-    radial-gradient(1px 1px at 62% 34%, rgba(230, 238, 255, 0.7), transparent),
-    radial-gradient(1.6px 1.6px at 76% 22%, rgba(255, 244, 214, 0.92), transparent),
-    radial-gradient(1px 1px at 88% 46%, rgba(255, 246, 220, 0.6), transparent),
-    radial-gradient(1px 1px at 6% 62%, rgba(230, 238, 255, 0.55), transparent),
-    radial-gradient(1.2px 1.2px at 34% 74%, rgba(255, 248, 226, 0.8), transparent),
-    radial-gradient(1px 1px at 58% 86%, rgba(255, 246, 220, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 82% 68%, rgba(255, 244, 214, 0.85), transparent),
-    radial-gradient(1px 1px at 94% 88%, rgba(230, 238, 255, 0.45), transparent),
-    radial-gradient(1px 1px at 22% 92%, rgba(255, 246, 220, 0.4), transparent);
-  opacity: 0.9;
+    radial-gradient(1px 1px at 7% 14%, rgba(255, 248, 228, 0.72) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 19% 68%, rgba(255, 240, 200, 0.55) 50%, transparent 100%),
+    radial-gradient(1px 1px at 26% 32%, rgba(212, 228, 255, 0.65) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 38% 82%, rgba(255, 246, 220, 0.5) 50%, transparent 100%),
+    radial-gradient(1.8px 1.8px at 47% 22%, rgba(255, 232, 180, 0.75) 50%, transparent 100%),
+    radial-gradient(1px 1px at 56% 58%, rgba(220, 232, 255, 0.55) 50%, transparent 100%),
+    radial-gradient(1.3px 1.3px at 67% 12%, rgba(255, 248, 232, 0.62) 50%, transparent 100%),
+    radial-gradient(1px 1px at 74% 46%, rgba(255, 240, 205, 0.5) 50%, transparent 100%),
+    radial-gradient(1.8px 1.8px at 85% 24%, rgba(255, 236, 188, 0.8) 50%, transparent 100%),
+    radial-gradient(1px 1px at 91% 74%, rgba(216, 230, 255, 0.6) 50%, transparent 100%);
+  animation: star-twinkle 11s ease-in-out infinite alternate;
 }
 
-/* 星点闪烁 */
 @keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.72;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.cosmos-stars {
-  animation: star-twinkle 9s ease-in-out infinite;
-}
-
-/* 银河带 */
-.cosmos-milkyway {
-  position: absolute;
-  inset: -10% -20%;
-  background: linear-gradient(
-    118deg,
-    transparent 34%,
-    rgba(196, 210, 255, 0.06) 46%,
-    rgba(214, 220, 255, 0.12) 52%,
-    rgba(196, 210, 255, 0.06) 58%,
-    transparent 70%
-  );
-  filter: blur(18px);
+  0% { opacity: 0.72; }
+  100% { opacity: 1; }
 }
 
 /* ============================================================
-   五、希腊公告式排版
-   ============================================================ */
+ * 希腊线专用排版与面板骨架
+ * ============================================================ */
+.theme-cosmos .cosmos-panel {
+  border: 1px solid rgba(212, 175, 105, 0.22);
+  background: rgba(15, 23, 40, 0.88);
+  border-radius: 2px;
+  backdrop-filter: blur(8px);
+}
 
-/* 碑刻大写标题：宽字距、居中 */
-.cosmos-title {
-  font-family: var(--font-stone);
-  font-weight: 600;
-  letter-spacing: 0.2em;
+.theme-cosmos .cosmos-panel-head {
+  padding: 20px 24px 16px;
+  text-align: center;
+  border-bottom: 1px solid rgba(212, 175, 105, 0.16);
+}
+
+.theme-cosmos .cosmos-panel-no {
+  font-family: 'Cinzel', 'JetBrains Mono', Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: rgba(217, 174, 95, 0.82);
   text-transform: uppercase;
-  text-align: center;
-  color: var(--foreground);
-  text-shadow:
-    0 0 18px rgba(217, 179, 106, 0.28),
-    0 0 42px rgba(217, 179, 106, 0.12);
 }
 
-/* 中文副题：宋体 + 宽字距，居中 */
-.cosmos-subtitle {
-  font-family: var(--font-song);
-  letter-spacing: 0.34em;
-  text-align: center;
-  color: var(--muted-foreground);
-  text-indent: 0.34em;
+.theme-cosmos .cosmos-panel-title {
+  margin-top: 6px;
+  font-family: 'Noto Serif SC', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #F4EFE3;
 }
 
-/* 上下装饰线 + 菱形符（希腊铭文常见的分隔） */
-.cosmos-rule {
+.theme-cosmos .cosmos-panel-en {
+  margin-top: 4px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: #9DA7BE;
+}
+
+.theme-cosmos .cosmos-prose {
+  font-family: 'Noto Serif SC', 'Noto Sans SC', Georgia, serif;
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: rgba(238, 231, 215, 0.9);
+}
+
+.theme-cosmos .cosmos-rule {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--primary);
 }
-.cosmos-rule::before,
-.cosmos-rule::after {
-  content: '';
+
+.theme-cosmos .cosmos-rule::before,
+.theme-cosmos .cosmos-rule::after {
+  content: "";
   height: 1px;
-  width: min(140px, 18vw);
-  background: linear-gradient(90deg, transparent, currentColor);
-  opacity: 0.6;
+  width: 52px;
+  background: linear-gradient(90deg, transparent, rgba(217, 174, 95, 0.45), transparent);
 }
-.cosmos-rule::after {
-  background: linear-gradient(270deg, transparent, currentColor);
-}
-.cosmos-rule-diamond {
-  width: 6px;
-  height: 6px;
+
+.theme-cosmos .cosmos-rule-diamond {
+  width: 5px;
+  height: 5px;
+  background: #D9AE5F;
   transform: rotate(45deg);
-  background: currentColor;
-  box-shadow: 0 0 10px currentColor;
 }
 
-/* 版块：碑刻边框（双线 + 内发光） */
-.cosmos-panel {
-  position: relative;
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow:
-    inset 0 0 0 1px rgba(217, 179, 106, 0.06),
-    inset 0 0 42px rgba(88, 120, 200, 0.06),
-    0 10px 44px rgba(2, 4, 12, 0.55);
-  backdrop-filter: blur(3px);
-}
-.cosmos-panel::before,
-.cosmos-panel::after {
-  content: '';
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 1px solid rgba(217, 179, 106, 0.42);
-  pointer-events: none;
-}
-.cosmos-panel::before {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-}
-.cosmos-panel::after {
-  right: -1px;
-  bottom: -1px;
-  border-left: none;
-  border-top: none;
-}
-
-/* 版块头：居中大字 + 分隔线 */
-.cosmos-panel-head {
-  padding: 18px 16px 14px;
-  border-bottom: 1px solid var(--border);
-  text-align: center;
-}
-.cosmos-panel-no {
-  font-family: var(--font-stone);
-  font-size: 10px;
-  letter-spacing: 0.36em;
-  color: var(--primary);
-  text-transform: uppercase;
-  opacity: 0.9;
-}
-.cosmos-panel-title {
-  margin-top: 6px;
-  font-family: var(--font-song);
-  font-size: clamp(17px, 2.2vw, 22px);
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
-  color: var(--foreground);
-}
-.cosmos-panel-en {
-  margin-top: 4px;
-  font-family: var(--font-stone);
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  color: var(--muted-foreground);
-}
-
-/* 星金正文：衬线，行距舒展 */
-.cosmos-prose {
-  font-family: var(--font-classic);
-  font-size: 15px;
-  line-height: 1.85;
-  color: var(--foreground);
-}
-
-/* 发光数值 */
-.cosmos-figure {
-  font-family: var(--font-stone);
-  color: var(--primary);
-  text-shadow: 0 0 14px rgba(217, 179, 106, 0.45);
-}
-
-/* ============================================================
-   六、星座图发光与表单适配
-   ============================================================ */
-
-/* 深色主题下把硬编码的白底控件改回深色（项目内多处用 !bg-white / bg-white） */
-[data-theme='cosmos'] [class*='bg-white'],
-.theme-cosmos [class*='bg-white'] {
-  background-color: rgba(18, 24, 40, 0.86) !important;
-}
-[data-theme='cosmos'] input,
-[data-theme='cosmos'] select,
-[data-theme='cosmos'] textarea,
-.theme-cosmos input,
-.theme-cosmos select,
-.theme-cosmos textarea {
-  color: var(--foreground);
-}
-[data-theme='cosmos'] ::-webkit-scrollbar-track,
-.theme-cosmos ::-webkit-scrollbar-track {
-  background: hsl(228 32% 10%);
-}
-[data-theme='cosmos'] ::-webkit-scrollbar-thumb,
-.theme-cosmos ::-webkit-scrollbar-thumb {
-  background: hsl(42 20% 32%);
-  border-color: hsl(228 32% 10%);
-}
-
-/* 主题根容器：透明，让下方固定的剪影 / 星空层透出；底色由 body 承载 */
-.theme-root {
-  position: relative;
-  background-color: transparent;
-}
-
-/* 底色挂在 body 上：不依赖 html 属性，避免被外部主题脚本改写 */
-body.theme-ink {
-  background-color: hsl(40 34% 97%);
-}
-body.theme-cosmos {
-  background-color: hsl(228 44% 6%);
-}
-
-@keyframes glyph-breathe {
-  0%,
-  100% {
-    opacity: 0.82;
-    filter: drop-shadow(0 0 4px currentColor);
-  }
-  50% {
-    opacity: 1;
-    filter: drop-shadow(0 0 9px currentColor);
-  }
-}
-
-.zodiac-glyph {
-  color: var(--primary);
-  animation: glyph-breathe 7s ease-in-out infinite;
-}
-
+/* 十二星座徽章交互 */
 .zodiac-tile {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px 10px;
-  border: 1px solid rgba(217, 179, 106, 0.18);
-  background: radial-gradient(circle at 50% 30%, rgba(217, 179, 106, 0.09), transparent 68%);
-  transition:
-    border-color 400ms ease,
-    background 400ms ease,
-    transform 400ms ease;
+  border: 1px solid rgba(212, 175, 105, 0.16);
+  background: rgba(16, 24, 42, 0.65);
+  border-radius: 2px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
+
 .zodiac-tile:hover {
-  border-color: rgba(217, 179, 106, 0.45);
-  background: radial-gradient(circle at 50% 30%, rgba(217, 179, 106, 0.18), transparent 70%);
   transform: translateY(-2px);
+  border-color: rgba(217, 174, 95, 0.5);
+  background: rgba(24, 34, 58, 0.85);
 }
 
-/* ------------------------------------------------------------
-   宫位吉凶光效：吉者恒明，凶者闪烁不定，平宫不动
-   光层走 ::after，文字与星图保持恒亮，不影响阅读
-   ------------------------------------------------------------ */
-@keyframes house-blessed {
-  0%,
-  100% {
-    opacity: 0.42;
-  }
-  50% {
-    opacity: 1;
-  }
+.zodiac-tile.is-lit {
+  border-color: rgba(217, 174, 95, 0.65);
+  background: radial-gradient(circle at 50% 35%, rgba(217, 174, 95, 0.13), rgba(16, 24, 42, 0.85) 75%);
 }
 
-@keyframes house-flicker {
-  0%,
-  100% {
-    opacity: 0.88;
-  }
-  6% {
-    opacity: 0.24;
-  }
-  7% {
-    opacity: 0.94;
-  }
-  24% {
-    opacity: 0.55;
-  }
-  25% {
-    opacity: 0.2;
-  }
-  26% {
-    opacity: 0.9;
-  }
-  48% {
-    opacity: 0.7;
-  }
-  49% {
-    opacity: 0.28;
-  }
-  50% {
-    opacity: 0.95;
-  }
-  72% {
-    opacity: 0.58;
-  }
-  73% {
-    opacity: 0.22;
-  }
-  74% {
-    opacity: 0.88;
-  }
+/* 兼容个别直接使用的 bg-white 工具类在 cosmos 主题下的柔化 */
+.theme-cosmos .bg-white {
+  background-color: var(--card) !important;
 }
 
-.zodiac-tile::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.zodiac-tile[data-tone='auspicious'] {
-  border-color: rgba(217, 179, 106, 0.42);
-}
-.zodiac-tile[data-tone='auspicious']::after {
-  background: radial-gradient(circle at 50% 30%, rgba(217, 179, 106, 0.2), transparent 64%);
-  box-shadow: inset 0 0 24px rgba(217, 179, 106, 0.14);
-  animation: house-blessed 5.6s ease-in-out infinite;
-}
-
-.zodiac-tile[data-tone='adverse'] {
-  border-color: rgba(227, 28, 41, 0.34);
-}
-.zodiac-tile[data-tone='adverse']::after {
-  background: radial-gradient(circle at 50% 30%, rgba(227, 28, 41, 0.16), transparent 62%);
-  box-shadow: inset 0 0 22px rgba(227, 28, 41, 0.16);
-  animation: house-flicker 4.8s ease-in-out infinite;
-}
-
-.zodiac-tile[data-tone='auspicious']:hover {
-  border-color: rgba(217, 179, 106, 0.72);
-}
-.zodiac-tile[data-tone='adverse']:hover {
-  border-color: rgba(227, 28, 41, 0.6);
-}
-
-.zodiac-tone {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  line-height: 1;
-  letter-spacing: 0.18em;
-}
-
-/* ============================================================
-   七、入场与切换动画
-   ============================================================ */
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.rise-in {
-  animation: rise-in 620ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-
-/* 线切换时的整体淡入 */
-@keyframes cross-fade {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.995);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.line-switch {
-  animation: cross-fade 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-
-/* ============================================================
-   八、减弱动效
-   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .ink-drift-slow,
   .ink-drift-slower,
   .crane-float,
-  .cosmos-stars,
-  .zodiac-glyph,
-  .zodiac-tile::after,
-  .rise-in,
-  .line-switch {
+  .cosmos-stars {
     animation: none !important;
   }
-  .zodiac-tile[data-tone='auspicious']::after,
-  .zodiac-tile[data-tone='adverse']::after {
-    opacity: 0.72;
-  }
-  .theme-skin {
-    transition: none !important;
-  }
-  html,
-  body {
+  .theme-root,
+  .theme-skin,
+  .zodiac-tile {
     transition: none !important;
   }
 }

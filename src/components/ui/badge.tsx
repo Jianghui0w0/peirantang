@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 const badgeVariants = cva(
   // Whitespace-nowrap: Badges should never wrap.
   // hover-elevate: adds subtle dark overlay on hover for interactive feedback
-  "whitespace-nowrap inline-flex items-center rounded-none border px-2.5 py-0.5 text-xs font-bold tracking-wide hover-elevate",
+  "whitespace-nowrap inline-flex items-center rounded-[2px] border px-2.5 py-0.5 text-xs font-bold tracking-wide hover-elevate",
   {
     variants: {
       variant: {

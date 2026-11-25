@@ -1,121 +1,144 @@
 :root {
-  --button-outline: rgba(20, 24, 28, 0.55);
-  --badge-outline: rgba(20, 24, 28, 0.28);
+  --button-outline: rgba(27, 25, 23, 0.42);
+  --badge-outline: rgba(27, 25, 23, 0.22);
 
   --opaque-button-border-intensity: 10;
 
-  --elevate-1: rgba(0, 0, 0, 0.04);
-  --elevate-2: rgba(0, 0, 0, 0.07);
+  --elevate-1: rgba(27, 25, 23, 0.035);
+  --elevate-2: rgba(27, 25, 23, 0.065);
 
-  /* ===== 瑞士国际主义 · Swiss International Style ===== */
-  /* 纸白底 · 墨黑字 · 灰细线网格 · 单一朱红强调 */
+  /* ===== 天枢 · 东方雅集 (Archival Modernist Ink) ===== */
+  /* 温润宣纸底色 · 徽墨正文 · 细石规线 · 印泥朱砂 */
 
-  /* 底色：极浅冷灰白，卡片纯白与之分层 */
-  --background: hsl(210 17% 98%);
-  --foreground: hsl(222 14% 16%);
+  --background: hsl(39 33% 95%);
+  --foreground: hsl(26 10% 11%);
 
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222 14% 16%);
-  --card-border: hsl(222 10% 84%);
+  --card: hsl(40 38% 99%);
+  --card-foreground: hsl(26 10% 11%);
+  --card-border: hsl(37 22% 83%);
 
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222 14% 16%);
+  --popover: hsl(40 38% 99%);
+  --popover-foreground: hsl(26 10% 11%);
 
-  /* 主色：瑞士红（仅用于 CTA、忌神、关键标记） */
-  --primary: hsl(356 78% 50%);
-  --primary-foreground: hsl(0 0% 100%);
+  /* 主色：印泥朱砂（深厚不刺眼） */
+  --primary: hsl(2 67% 44%);
+  --primary-foreground: hsl(40 40% 99%);
 
-  --secondary: hsl(222 12% 94%);
-  --secondary-foreground: hsl(222 14% 20%);
+  --secondary: hsl(38 20% 91%);
+  --secondary-foreground: hsl(26 12% 16%);
 
-  --muted: hsl(222 12% 95%);
-  --muted-foreground: hsl(222 8% 44%);
+  --muted: hsl(38 22% 92%);
+  --muted-foreground: hsl(30 9% 38%);
 
-  --accent: hsl(222 14% 93%);
-  --accent-foreground: hsl(222 14% 20%);
+  --accent: hsl(38 24% 89%);
+  --accent-foreground: hsl(26 12% 14%);
 
-  --info: hsl(212 58% 42%);
-  --info-foreground: hsl(212 60% 16%);
+  --info: hsl(210 55% 36%);
+  --info-foreground: hsl(210 60% 98%);
 
-  --destructive: hsl(356 78% 50%);
-  --destructive-foreground: hsl(0 0% 100%);
+  --destructive: hsl(2 67% 44%);
+  --destructive-foreground: hsl(40 40% 99%);
 
-  /* 用神绿：深而克制 */
-  --success: hsl(152 44% 32%);
+  /* 语义色（全主题统一变量，确保图表/徽章与双主题原生融合） */
+  --success: hsl(154 56% 27%);
   --success-foreground: hsl(150 40% 98%);
-
-  --warning: hsl(38 62% 44%);
+  --warning: hsl(38 74% 34%);
   --warning-foreground: hsl(40 60% 98%);
 
-  /* 灰细线（印刷规线感） */
-  --border: hsl(222 10% 85%);
-  --input: hsl(222 10% 78%);
-  --ring: hsl(356 78% 50%);
+  --semantic-useful: #1E6B4B;
+  --semantic-useful-bg: rgba(30, 107, 75, 0.08);
+  --semantic-useful-border: rgba(30, 107, 75, 0.34);
 
-  /* 五行低饱和平涂色板（统一 S 30-60%） */
-  --el-wood: hsl(125 28% 40%);
-  --el-fire: hsl(12 72% 50%);
-  --el-earth: hsl(40 58% 46%);
-  --el-metal: hsl(210 10% 52%);
-  --el-water: hsl(210 52% 40%);
+  --semantic-taboo: #B82925;
+  --semantic-taboo-bg: rgba(184, 41, 37, 0.07);
+  --semantic-taboo-border: rgba(184, 41, 37, 0.34);
 
-  /* 阴阳二气：阳=暖橙 / 阴=冷靛 */
-  --qi-yang: hsl(28 82% 48%);
-  --qi-yin: hsl(215 55% 38%);
+  --semantic-amber: #966814;
+  --semantic-amber-bg: rgba(150, 104, 20, 0.09);
+  --semantic-amber-border: rgba(150, 104, 20, 0.36);
 
-  /* 图表色：五行 + 中性 */
-  --chart-1: hsl(125 28% 40%);
-  --chart-2: hsl(12 72% 50%);
-  --chart-3: hsl(40 58% 46%);
-  --chart-4: hsl(210 10% 52%);
-  --chart-5: hsl(210 52% 40%);
+  --semantic-sky: #275B8A;
+  --semantic-sky-bg: rgba(39, 91, 138, 0.08);
+  --semantic-sky-border: rgba(39, 91, 138, 0.34);
+
+  --semantic-neutral: #636B75;
+
+  /* 细线规尺 */
+  --border: hsl(37 22% 83%);
+  --input: hsl(36 18% 76%);
+  --ring: hsl(2 67% 44%);
+
+  /* 五行国画矿物色板（浅纸与深空模式均高对比清晰） */
+  --el-wood: #2E7246;
+  --el-fire: #C84024;
+  --el-earth: #986919;
+  --el-metal: #5C6773;
+  --el-water: #285A8C;
+
+  /* 阴阳二气：阳暖琥珀 / 阴冷花青 */
+  --qi-yang: #C96414;
+  --qi-yin: #264F8C;
+
+  /* 图表自适应令牌 */
+  --chart-curve: #1F1D1A;
+  --chart-ideal: #0F766E;
+  --chart-grid: #DDD5C7;
+  --chart-axis: #5E594F;
+  --chart-ghost: #8B8478;
+  --chart-node-bg: #FCFBF8;
+  --chart-area-tint: rgba(184, 41, 37, 0.045);
+
+  --chart-1: #2E7246;
+  --chart-2: #C84024;
+  --chart-3: #986919;
+  --chart-4: #5C6773;
+  --chart-5: #285A8C;
 
   /* Sidebar */
-  --sidebar: hsl(0 0% 100%);
-  --sidebar-foreground: hsl(222 14% 16%);
-  --sidebar-primary: hsl(356 78% 50%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(222 14% 94%);
-  --sidebar-accent-foreground: hsl(222 14% 20%);
-  --sidebar-border: hsl(222 10% 85%);
-  --sidebar-ring: hsl(356 78% 50%);
+  --sidebar: hsl(40 38% 99%);
+  --sidebar-foreground: hsl(26 10% 11%);
+  --sidebar-primary: hsl(2 67% 44%);
+  --sidebar-primary-foreground: hsl(40 40% 99%);
+  --sidebar-accent: hsl(38 24% 91%);
+  --sidebar-accent-foreground: hsl(26 12% 16%);
+  --sidebar-border: hsl(37 22% 83%);
+  --sidebar-ring: hsl(2 67% 44%);
 
   /* 计算边框 */
-  --primary-border: hsl(from hsl(356 78% 50%) h s calc(l + var(--opaque-button-border-intensity)));
-  --secondary-border: hsl(from hsl(222 12% 94%) h s calc(l - var(--opaque-button-border-intensity)));
-  --destructive-border: hsl(from hsl(356 78% 50%) h s calc(l + var(--opaque-button-border-intensity)));
-  --accent-border: hsl(from hsl(222 14% 93%) h s calc(l - var(--opaque-button-border-intensity)));
-  --muted-border: hsl(from hsl(222 12% 95%) h s calc(l - var(--opaque-button-border-intensity)));
+  --primary-border: hsl(from hsl(2 67% 44%) h s calc(l + var(--opaque-button-border-intensity)));
+  --secondary-border: hsl(from hsl(38 20% 91%) h s calc(l - var(--opaque-button-border-intensity)));
+  --destructive-border: hsl(from hsl(2 67% 44%) h s calc(l + var(--opaque-button-border-intensity)));
+  --accent-border: hsl(from hsl(38 24% 89%) h s calc(l - var(--opaque-button-border-intensity)));
+  --muted-border: hsl(from hsl(38 22% 92%) h s calc(l - var(--opaque-button-border-intensity)));
 
-  /* 字体：Grotesque 无衬线全家（瑞士传统 = Helvetica 系） */
+  /* 字体族 */
   --font-sans:
     'Archivo', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
     'Segoe UI', sans-serif;
   --font-serif:
-    'Archivo', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    'Noto Serif SC', 'Songti SC', 'STSong', 'Georgia', serif;
   --font-mono:
     'JetBrains Mono', 'Noto Sans SC', ui-monospace, SFMono-Regular, Menlo,
     monospace;
   --font-display:
-    'Archivo', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    'Noto Serif SC', 'Archivo', 'Noto Sans SC', serif;
 
-  /* 瑞士直角：全部圆角归零 */
-  --radius: 0px;
+  /* 建筑感微倒角 */
+  --radius: 2px;
 
-  /* 无阴影：纯扁平，层次靠细线与色块 */
   --shadow-x: 0px;
   --shadow-y: 0px;
   --shadow-blur: 0px;
   --shadow-spread: 0px;
   --shadow-opacity: 0;
-  --shadow-color: 222 14% 16%;
+  --shadow-color: 26 10% 11%;
 
   --shadow-2xs: none;
   --shadow-xs: none;
-  --shadow-sm: none;
-  --shadow: none;
-  --shadow-md: none;
-  --shadow-lg: none;
+  --shadow-sm: 0 1px 2px rgba(27, 25, 23, 0.04);
+  --shadow: 0 2px 8px -2px rgba(27, 25, 23, 0.06);
+  --shadow-md: 0 10px 26px -8px rgba(27, 25, 23, 0.10);
+  --shadow-lg: 0 16px 36px -10px rgba(27, 25, 23, 0.12);
   --shadow-xl: none;
   --shadow-2xl: none;
 
@@ -176,11 +199,10 @@
   --font-serif: var(--font-serif);
   --font-display: var(--font-display);
 
-  /* 瑞士直角：所有圆角刻度归零，仅保留 full 供圆点/圆环使用 */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
   --radius-full: 9999px;
 
   --shadow-2xs: var(--shadow-2xs);
@@ -258,8 +280,7 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
     inset: -1px;
   }
 }

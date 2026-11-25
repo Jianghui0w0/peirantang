@@ -38,9 +38,9 @@ interface MingJuFieldChartProps {
 }
 
 const MARK_COLOR: Record<XiJiMark, string> = {
-  useful: '#2E7654',
-  taboo: '#E31C29',
-  neutral: '#788491',
+  useful: 'var(--semantic-useful)',
+  taboo: 'var(--semantic-taboo)',
+  neutral: 'var(--semantic-neutral)',
 };
 const MARK_LABEL: Record<XiJiMark, string> = { useful: '用', taboo: '忌', neutral: '中' };
 /** 完整称谓：仅用/忌称「神」，中性不称神（避免「中神」这种不通的表述） */
@@ -49,10 +49,10 @@ const KIND_LABEL: Record<InjectKind, string> = { stem: '干', branch: '支' };
 
 /** 注入字得失结论：吉（助用/制忌）/ 凶（助忌/制用）/ 吉凶互见 / 平 */
 const VERDICT_COLOR: Record<FieldVerdict, string> = {
-  gain: '#2E7654',
-  loss: '#E31C29',
-  mixed: '#B98C31',
-  flat: '#788491',
+  gain: 'var(--semantic-useful)',
+  loss: 'var(--semantic-taboo)',
+  mixed: 'var(--semantic-amber)',
+  flat: 'var(--semantic-neutral)',
 };
 const VERDICT_SHORT: Record<FieldVerdict, string> = { gain: '吉', loss: '凶', mixed: '杂', flat: '平' };
 const VERDICT_TITLE: Record<FieldVerdict, string> = {
@@ -68,23 +68,23 @@ const EFFECT_LABEL: Record<MingJuFieldEffect['kind'], string> = {
   controls: '克',
 };
 
-/** 五行低饱和平涂色（与页面 ELEMENT_COLORS 同值，仅用于五行名/标签） */
+/** 五行低饱和平涂色（国画矿物色系，浅纸/深空均高对比） */
 const ELEMENT_COLOR: Record<FieldElement, string> = {
-  wood: '#4A834E',
-  fire: '#DC4824',
-  earth: '#B98C31',
-  metal: '#788491',
-  water: '#31669B',
+  wood: 'var(--el-wood)',
+  fire: 'var(--el-fire)',
+  earth: 'var(--el-earth)',
+  metal: 'var(--el-metal)',
+  water: 'var(--el-water)',
 };
 
-/** 两仪语义色：阳橙 hsl(28 82% 48%) / 阴靛蓝 hsl(215 55% 38%) */
-const YANG_COLOR = '#DD7A16';
-const YIN_COLOR = '#2B528F';
+/** 两仪语义色 */
+const YANG_COLOR = 'var(--qi-yang)';
+const YIN_COLOR = 'var(--qi-yin)';
 const SIGN_COLOR = (sign: number) => (sign > 0 ? YANG_COLOR : sign < 0 ? YIN_COLOR : ELEMENT_COLOR.earth);
-const CURVE_COLOR = '#1F2937';
-/** 理想 f* 虚影：深青碧，与灰规线/原局灰框/实线均明显区分，专用作「本盘应去方向」参照 */
-const IDEAL_COLOR = '#0F766E';
-const GHOST_COLOR = '#94A3B8';
+const CURVE_COLOR = 'var(--chart-curve)';
+/** 理想 f* 虚影：深青碧，专用作「本盘应去方向」参照 */
+const IDEAL_COLOR = 'var(--chart-ideal)';
+const GHOST_COLOR = 'var(--chart-ghost)';
 
 const fmt = (n: number) => (n >= 0 ? '+' : '') + Math.round(n * 10) / 10;
 
@@ -215,16 +215,16 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
         }
         className="flex items-center gap-1 border px-1.5 py-0.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground disabled:cursor-not-allowed"
         style={{
-          borderRadius: 0,
-          borderColor: c.injected ? ec : '#D8DCE2',
+          borderRadius: 2,
+          borderColor: c.injected ? ec : 'var(--border)',
           borderWidth: c.injected ? 2 : 1,
-          backgroundColor: c.injected ? `${ec}1A` : 'transparent',
+          backgroundColor: c.injected ? 'var(--accent)' : 'var(--card)',
           opacity: disabled && !c.injected ? 0.38 : 1,
         }}
       >
         <span
           className="text-[13px] font-black"
-          style={{ fontFamily: 'var(--font-sans, sans-serif)', color: '#1F2937' }}
+          style={{ fontFamily: 'var(--font-serif)', color: 'var(--foreground)' }}
         >
           {c.char}
         </span>
@@ -323,10 +323,10 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
 
           {/* 横向网格 + 纵向节点导轨 */}
           {[6, 4, 2, -2, -4, -6].map((zv) => (
-            <line key={`gh-${zv}`} x1={PLOT_L - 8} y1={yAt(zv)} x2={PLOT_R + 8} y2={yAt(zv)} stroke="#E5E7EB" strokeWidth={1} />
+            <line key={`gh-${zv}`} x1={PLOT_L - 8} y1={yAt(zv)} x2={PLOT_R + 8} y2={yAt(zv)} stroke="var(--chart-grid)" strokeWidth={1} />
           ))}
           {field.elements.map((_, i) => (
-            <line key={`gv-${i}`} x1={xAt(i)} y1={yAt(cfg.zMax)} x2={xAt(i)} y2={yAt(-cfg.zMax)} stroke="#EEF1F4" strokeWidth={1} />
+            <line key={`gv-${i}`} x1={xAt(i)} y1={yAt(cfg.zMax)} x2={xAt(i)} y2={yAt(-cfg.zMax)} stroke="var(--chart-grid)" strokeOpacity={0.6} strokeWidth={1} />
           ))}
 
           {/* z 轴刻度 + 阴阳轴名 */}
@@ -339,7 +339,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
               textAnchor="end"
               fontSize="10"
               fontWeight="800"
-              fill={zv === 0 ? '#3A4450' : GHOST_COLOR}
+              fill={zv === 0 ? 'var(--chart-axis)' : GHOST_COLOR}
               style={{ fontFamily: 'var(--font-mono, monospace)' }}
             >
               {zv > 0 ? `+${zv}` : `${zv}`}
@@ -388,7 +388,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
           </g>
 
           {/* z = 0 基准线（太极枢机所在） */}
-          <line x1={PLOT_L - 8} y1={yAt(0)} x2={PLOT_R + 8} y2={yAt(0)} stroke="#3A4450" strokeWidth={1.4} />
+          <line x1={PLOT_L - 8} y1={yAt(0)} x2={PLOT_R + 8} y2={yAt(0)} stroke="var(--chart-axis)" strokeWidth={1.4} />
 
           {/* 理想函数虚影 f*（用神理想态 · 本盘应去方向）；先画，使实线压在其上 */}
           <path d={smoothPath(field.elements.map((_, i) => ({ x: xAt(i), y: yAt(idealVals[i] ?? 0) })))} fill="none" stroke={IDEAL_COLOR} strokeWidth={2} strokeDasharray="7 5" strokeLinecap="round" />
@@ -402,7 +402,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                 y={y - 4}
                 width={8}
                 height={8}
-                fill="#FFFFFF"
+                fill="var(--chart-node-bg)"
                 stroke={IDEAL_COLOR}
                 strokeWidth={1.3}
                 strokeDasharray="2.5 2"
@@ -441,7 +441,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
             const cy = yAt(animVals[i] ?? 0);
             const needMore = sh > 0;
             const col = needMore ? SIGN_COLOR(FIELD_YIN_YANG_SIGN[field.elements[i]]) : GHOST_COLOR;
-            const lx = i >= 3 ? xAt(i) - 8 : xAt(i) + 8;
+            const lx = i >= 3 ? xAt(i) - 11 : xAt(i) + 11;
             const anchor = i >= 3 ? 'end' : 'start';
             return (
               <g key={`gap-${i}`}>
@@ -453,6 +453,10 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                   fontSize="10"
                   fontWeight="800"
                   fill={col}
+                  paintOrder="stroke"
+                  stroke="var(--card)"
+                  strokeWidth={3.5}
+                  strokeLinejoin="round"
                   style={{ fontFamily: 'var(--font-mono, monospace)' }}
                 >
                   {needMore ? `尚差 ${fmt(sh)}` : `已超 ${fmt(-sh)}`}
@@ -474,9 +478,10 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                 y={yAt(animVals[i] ?? 0) - s}
                 width={s * 2}
                 height={s * 2}
+                rx={1.5}
                 fill={SIGN_COLOR(FIELD_YIN_YANG_SIGN[el as FieldElement])}
-                stroke="#FFFFFF"
-                strokeWidth={1.4}
+                stroke="var(--chart-node-bg)"
+                strokeWidth={1.5}
               />
             );
           })}
@@ -511,11 +516,12 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                   y={chipY - 8}
                   width={40}
                   height={16}
-                  fill={`${ELEMENT_COLOR[c.element]}1A`}
+                  rx={2}
+                  fill="var(--card)"
                   stroke={ELEMENT_COLOR[c.element]}
                   strokeWidth={1.6}
                 />
-                <text x={cx - 6} y={chipY + 4} textAnchor="middle" fontSize="12" fontWeight="900" fill="#1F2937" style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
+                <text x={cx - 6} y={chipY + 4} textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--foreground)" style={{ fontFamily: 'var(--font-serif)' }}>
                   {c.char}
                 </text>
                 <text x={cx + 13} y={chipY + 4} textAnchor="middle" fontSize="10.5" fontWeight="900" fill={VERDICT_COLOR[c.verdict]} style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
@@ -535,7 +541,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                 fontSize="13"
                 fontWeight="900"
                 fill={ELEMENT_COLOR[el as FieldElement]}
-                style={{ fontFamily: 'var(--font-sans, sans-serif)' }}
+                style={{ fontFamily: 'var(--font-serif)' }}
               >
                 {field.elementNames[i]}
               </text>
@@ -545,7 +551,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                 textAnchor="middle"
                 fontSize="10"
                 fontWeight="800"
-                fill="#3A4450"
+                fill="var(--chart-axis)"
                 style={{ fontFamily: 'var(--font-mono, monospace)' }}
               >
                 {fmt(targetVals[i] ?? 0)}
@@ -667,7 +673,7 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
           </span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 border-2" style={{ borderColor: '#2E7654', borderRadius: 0 }} />
+          <span className="h-2.5 w-2.5 border-2" style={{ borderColor: 'var(--semantic-useful)', borderRadius: 2 }} />
           <span className="label-mono case-preserve text-[9.5px] text-muted-foreground">
             注入字得失徽章：吉（助用/制忌）/ 凶（助忌/制用）/ 杂（吉凶互见）/ 平 —— 因本盘用忌而异
           </span>
@@ -714,12 +720,12 @@ export default function MingJuFieldChart({ chart, yongJi }: MingJuFieldChartProp
                     .map((e) => `${EFFECT_LABEL[e.kind]}${FIELD_ELEMENT_NAMES[e.element]} ${fmt(e.axisDelta)}`)
                     .join('、')}；整字得失：${VERDICT_TITLE[c.verdict]}`}
                   className="flex items-center gap-1 border-2 px-1.5 py-0.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground"
-                  style={{ borderRadius: 0, borderColor: ec, backgroundColor: `${ec}1A` }}
+                  style={{ borderRadius: 2, borderColor: ec, backgroundColor: 'var(--accent)' }}
                 >
                   <span className="label-mono text-[8px] text-muted-foreground">{i + 1}</span>
                   <span
                     className="text-[12px] font-black"
-                    style={{ fontFamily: 'var(--font-sans, sans-serif)', color: '#1F2937' }}
+                    style={{ fontFamily: 'var(--font-serif)', color: 'var(--foreground)' }}
                   >
                     {c.char}
                   </span>

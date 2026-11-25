@@ -1,15 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700;900&family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./tailwind-theme.css";
 @import "./typography.css";
 @import "./styles/themes.css";
 
-/* ===== 瑞士国际主义 · 全局基底 ===== */
+/* ===== 天枢 · 东方雅集 全局基底 ===== */
 html {
   color-scheme: light;
   background-color: var(--background);
-  /* 版块锚点跳转平滑滚动（命主速览指标卡等内部链接）；尊重系统减弱动效设置 */
   scroll-behavior: smooth;
 }
 
@@ -32,60 +31,72 @@ body {
   z-index: 1;
 }
 
-/* 文本选中：朱红浅底 */
+/* 文本选中：朱砂暖墨 */
 ::selection {
-  background: hsl(356 78% 50% / 0.16);
+  background: rgba(184, 41, 37, 0.16);
+  color: var(--foreground);
+}
+
+[data-theme='cosmos'] ::selection {
+  background: rgba(217, 174, 95, 0.24);
   color: var(--foreground);
 }
 
 /* 极简滚动条 */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(222 12% 96%);
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(222 8% 76%);
-  border: 2px solid hsl(222 12% 96%);
+  background: var(--border);
+  border: 2px solid var(--background);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(222 8% 58%);
+  background: var(--muted-foreground);
 }
 
-/* ===== 瑞士工具类 ===== */
+/* ===== 排版与批注工具类（置于 components 层，确保 Tailwind 工具类如 text-white / normal-case 可正常覆盖） ===== */
+@layer components {
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
 
-/* 元信息标签：等宽、大写、大字距（印刷批注感） */
-.label-mono {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  .case-preserve {
+    text-transform: none;
+  }
+
+  .font-editorial {
+    font-family: var(--font-serif);
+  }
+
+  .section-num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+  }
 }
 
-/*
- * 保留大小写：label-mono 为未分层（unlayered）类，优先级高于 Tailwind utilities，
- * 故 Tailwind 的 normal-case 无法覆盖其 uppercase。公式与符号（f₀、δ、字段名、版本号等）
- * 需按原样显示时，在 label-mono 之外追加本类。
- * 必须声明在 .label-mono 之后：同为 (0,1,0) 特异性，靠源码顺序取胜。
- */
-.case-preserve {
-  text-transform: none;
+/* 隐藏横向滚动条轨道（保留触摸滑动） */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-/* 版块编号：大号 grotesque 数字 */
-.section-num {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--primary);
-}
-
-/* 印刷规线（角标刻度）：卡片四角对位标记 */
+/* 四柱与核心容器对位角标 */
 .crosshair {
   position: relative;
 }
@@ -93,47 +104,57 @@ body {
 .crosshair::after {
   content: "";
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   pointer-events: none;
   z-index: 1;
 }
 .crosshair::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid var(--foreground);
-  border-left: 2px solid var(--foreground);
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+  opacity: 0.55;
 }
 .crosshair::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid var(--foreground);
-  border-right: 2px solid var(--foreground);
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
+  opacity: 0.55;
 }
 
-/* 强调下划线：朱红粗短线（替代糖果高亮） */
+/* 论文侧边批注条 */
+.margin-note-box {
+  border-left: 2px solid var(--border);
+  padding-left: 14px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--muted-foreground);
+}
+
+/* 行内高亮标记（用/忌重点词） */
 .mark-highlight {
-  background: linear-gradient(180deg, transparent 68%, hsl(356 78% 50% / 0.28) 68%);
-  padding: 0 1px;
-  color: var(--foreground);
+  display: inline-block;
+  padding: 0 5px;
   font-weight: 700;
-  white-space: nowrap;
+  background: rgba(184, 41, 37, 0.08);
+  color: var(--primary);
+  border-bottom: 1.5px solid var(--primary);
+  border-radius: 1px;
 }
 
-/* 表格数字对齐 */
+/* 等宽数字 */
 .num-tabular {
-  font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-/* 结果入场：克制的上浮淡入（200ms） */
-.reveal {
-  animation: reveal-up 0.2s ease-out both;
-}
-@keyframes reveal-up {
+/* 模块轻量淡入 */
+@keyframes page-reveal {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -141,34 +162,47 @@ body {
   }
 }
 
-/* 回到顶部：方块描边按钮 */
+.reveal {
+  animation: page-reveal 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
+/* 回到顶部按钮 */
 .back-to-top {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 50;
-  width: 44px;
-  height: 44px;
-  background: var(--foreground);
-  color: var(--background);
+  width: 42px;
+  height: 42px;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
-  border: none;
-  transition: background-color 0.15s ease;
+  box-shadow: var(--shadow);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .back-to-top:hover {
   background: var(--primary);
   color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 .back-to-top:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-/* 减少动效偏好支持 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

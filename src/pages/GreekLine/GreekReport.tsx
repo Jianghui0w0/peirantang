@@ -183,7 +183,7 @@ function RectifyPanel({ chart, age }: { chart: AstroChart; age: number }) {
                 <span style={{ color: 'var(--foreground)' }}>
                   {m.event.year} · {EVENT_NAMES_ZH[m.event.type]}
                 </span>
-                <span style={{ color: m.score > 0 ? '#2E7654' : 'var(--muted-foreground)' }}>
+                <span style={{ color: m.score > 0 ? 'var(--semantic-useful)' : 'var(--muted-foreground)' }}>
                   {m.score > 0 ? '命中' : '未命中'}（{m.score > 0 ? '+' : ''}{m.score}）
                 </span>
               </div>
@@ -226,23 +226,23 @@ function Section({
   );
 }
 
-/** 判读档位配色 */
-const LEVEL_TONE: Record<VerdictLevel, string> = {
-  strong: '#2E7654',
-  moderate: '#C9A227',
-  mixed: '#8FC7D8',
-  weak: '#E8A24A',
+/** 判读档位配色（星夜高对比语义色） */
+const LEVEL_META: Record<VerdictLevel, { color: string; bg: string; border: string }> = {
+  strong: { color: 'var(--semantic-useful)', bg: 'var(--semantic-useful-bg)', border: 'var(--semantic-useful-border)' },
+  moderate: { color: 'var(--semantic-amber)', bg: 'var(--semantic-amber-bg)', border: 'var(--semantic-amber-border)' },
+  mixed: { color: 'var(--semantic-sky)', bg: 'var(--semantic-sky-bg)', border: 'var(--semantic-sky-border)' },
+  weak: { color: 'var(--semantic-taboo)', bg: 'var(--semantic-taboo-bg)', border: 'var(--semantic-taboo-border)' },
 };
 
 /** 判读卡：区间谱条 + 具体读法 + 加减分来源 + 依据折叠 */
-function VerdictCard({ v }: { v: Verdict }) {
-  const tone = LEVEL_TONE[v.level];
+function VerdictCard({ v, className = '' }: { v: Verdict; className?: string }) {
+  const lm = LEVEL_META[v.level];
   const [lo, hi] = v.band.band;
   return (
-    <div className="border px-4 py-5 md:px-5" style={{ borderColor: `${tone}44`, background: `${tone}0A` }}>
+    <div className={`border px-4 py-5 md:px-5 ${className}`} style={{ borderColor: lm.border, background: lm.bg }}>
       <div className="flex items-baseline justify-between gap-2">
         <div className="cosmos-panel-no">{v.en}</div>
-        <div className="label-mono text-[9px]" style={{ color: tone }}>
+        <div className="label-mono text-[9px]" style={{ color: lm.color }}>
           综合 {v.score > 0 ? '+' : ''}
           {v.score}
         </div>
@@ -250,7 +250,10 @@ function VerdictCard({ v }: { v: Verdict }) {
       <div className="cosmos-panel-title mt-1 !text-[15px]">
         {v.title}
         {v.tag && (
-          <span className="label-mono ml-2 align-middle text-[8.5px]" style={{ color: '#E8A24A', border: '1px solid #E8A24A55', padding: '1px 4px' }}>
+          <span
+            className="label-mono ml-2 align-middle text-[8.5px]"
+            style={{ color: 'var(--semantic-amber)', border: '1px solid var(--semantic-amber-border)', padding: '1px 4px' }}
+          >
             {v.tag}
           </span>
         )}
@@ -266,8 +269,7 @@ function VerdictCard({ v }: { v: Verdict }) {
                 key={s}
                 className="h-1.5 flex-1"
                 style={{
-                  background: on ? tone : 'rgba(217, 179, 106, 0.16)',
-                  boxShadow: on ? `0 0 8px ${tone}55` : 'none',
+                  background: on ? lm.color : 'rgba(217, 179, 106, 0.16)',
                 }}
               />
             );
@@ -280,7 +282,7 @@ function VerdictCard({ v }: { v: Verdict }) {
               <div
                 key={s}
                 className="flex-1 text-center text-[8.5px] font-bold"
-                style={{ color: on ? tone : 'var(--muted-foreground)', opacity: on ? 1 : 0.65 }}
+                style={{ color: on ? lm.color : 'var(--muted-foreground)', opacity: on ? 1 : 0.65 }}
               >
                 {s}
               </div>
@@ -289,7 +291,7 @@ function VerdictCard({ v }: { v: Verdict }) {
         </div>
       </div>
 
-      <div className="mt-2 text-center text-[11px]" style={{ color: tone }}>
+      <div className="mt-2 text-center text-[11px]" style={{ color: lm.color }}>
         大概率落在「{v.band.label}」区间
       </div>
 
@@ -302,7 +304,7 @@ function VerdictCard({ v }: { v: Verdict }) {
         <div className="mt-3 space-y-1 border-t border-border pt-2">
           {v.drivers.up.map((d) => (
             <div key={`u-${d.name}`} className="flex items-baseline justify-between gap-2 text-[10px]">
-              <span style={{ color: '#2E7654' }}>
+              <span style={{ color: 'var(--semantic-useful)' }}>
                 ↑ {d.name} {d.score > 0 ? '+' : ''}
                 {d.score}
               </span>
@@ -311,7 +313,7 @@ function VerdictCard({ v }: { v: Verdict }) {
           ))}
           {v.drivers.down.map((d) => (
             <div key={`d-${d.name}`} className="flex items-baseline justify-between gap-2 text-[10px]">
-              <span style={{ color: '#E31C29' }}>
+              <span style={{ color: 'var(--semantic-taboo)' }}>
                 ↓ {d.name} {d.score}
               </span>
               <span style={{ color: 'var(--muted-foreground)' }}>第 {d.house} 宫</span>
@@ -468,7 +470,7 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
       <Section no="02" title="十二宫位" en="THE TWELVE HOUSES" meta="WHOLE SIGN">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2 label-mono text-[9px] text-muted-foreground md:px-6">
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5" style={{ background: '#D9B36A' }} />
+            <span className="inline-block h-1.5 w-1.5" style={{ background: 'var(--semantic-amber)' }} />
             吉宫 · 恒明
           </span>
           <span className="inline-flex items-center gap-1.5">
@@ -476,7 +478,7 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
             平宫 · 常亮
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-1.5 w-1.5" style={{ background: '#E31C29' }} />
+            <span className="inline-block h-1.5 w-1.5" style={{ background: 'var(--semantic-taboo)' }} />
             凶宫 · 闪烁
           </span>
         </div>
@@ -501,8 +503,12 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
       {/* 03 命理解读 */}
       <Section no="03" title="命理解读" en="READING" meta="传统判读 · 非事实陈述">
         <div className="grid gap-3 p-4 sm:grid-cols-2 md:p-6 lg:grid-cols-3">
-          {judgement.verdicts.map((v) => (
-            <VerdictCard key={v.key} v={v} />
+          {judgement.verdicts.map((v, idx) => (
+            <VerdictCard
+              key={v.key}
+              v={v}
+              className={idx === judgement.verdicts.length - 1 && judgement.verdicts.length % 3 === 1 ? 'sm:col-span-2 lg:col-span-3' : ''}
+            />
           ))}
         </div>
         <div className="border-t border-border px-4 py-3 md:px-6">
@@ -526,8 +532,8 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
 
           {stability && (
             <div className="mt-4 space-y-1.5">
-             {stability.themes.map((t) => {
-                const tone = t.grade === 'stable' ? '#2E7654' : t.grade === 'unstable' ? '#E8A24A' : '#C9A227';
+              {stability.themes.map((t) => {
+                const tone = t.grade === 'stable' ? 'var(--semantic-useful)' : t.grade === 'unstable' ? 'var(--semantic-taboo)' : 'var(--semantic-amber)';
                 return (
                   <div key={t.key} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px]">
                     <span style={{ color: 'var(--foreground)' }}>{t.title}</span>
@@ -595,10 +601,10 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
                     </td>
                     <td className="num-tabular px-3 py-2 text-foreground md:px-4">第 {chart.bodies[p].house} 宫</td>
                     <td className="px-3 py-2 md:px-4">
-                      {d.kinds.includes('domicile') ? <span className="label-mono text-[#2E7654]">庙</span> : null}
-                      {d.kinds.includes('exaltation') ? <span className="label-mono ml-1 text-[#2E7654]">旺</span> : null}
-                      {d.kinds.includes('detriment') ? <span className="label-mono ml-1 text-primary">陷</span> : null}
-                      {d.kinds.includes('fall') ? <span className="label-mono ml-1 text-primary">落</span> : null}
+                      {d.kinds.includes('domicile') ? <span className="label-mono" style={{ color: 'var(--semantic-useful)' }}>庙</span> : null}
+                      {d.kinds.includes('exaltation') ? <span className="label-mono ml-1" style={{ color: 'var(--semantic-useful)' }}>旺</span> : null}
+                      {d.kinds.includes('detriment') ? <span className="label-mono ml-1" style={{ color: 'var(--semantic-taboo)' }}>陷</span> : null}
+                      {d.kinds.includes('fall') ? <span className="label-mono ml-1" style={{ color: 'var(--semantic-taboo)' }}>落</span> : null}
                       {d.kinds.includes('peregrine') ? <span className="label-mono ml-1 text-muted-foreground">无</span> : null}
                     </td>
                     <td className="px-3 py-2 md:px-4">
@@ -645,9 +651,9 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
                   const gradeLabel = { strong: '强', good: '偏强', average: '中', weak: '偏弱', debilitated: '弱' }[s.grade];
                   const tone =
                     s.grade === 'strong' || s.grade === 'good'
-                      ? '#2E7654'
+                      ? 'var(--semantic-useful)'
                       : s.grade === 'weak' || s.grade === 'debilitated'
-                        ? 'var(--primary)'
+                        ? 'var(--semantic-taboo)'
                         : 'var(--muted-foreground)';
                   return (
                     <tr key={p} className="border-b border-border last:border-b-0">
@@ -876,7 +882,7 @@ export default function GreekReport({ model }: { model: GreekModel | null }) {
                 <div className="mt-0.5">
                   <span
                     className="label-mono"
-                    style={{ color: a.aspect === 'opposition' || a.aspect === 'square' ? 'var(--primary)' : '#2E7654' }}
+                    style={{ color: a.aspect === 'opposition' || a.aspect === 'square' ? 'var(--semantic-taboo)' : 'var(--semantic-useful)' }}
                   >
                     {SIGN_ASPECT_NAMES[a.aspect]}
                   </span>

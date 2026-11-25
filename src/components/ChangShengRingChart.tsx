@@ -11,11 +11,11 @@ import { SHI_ER_CHANG_SHENG_CYCLE } from '@/data/baziData';
 // ============================================================
 
 const ELEMENT_COLORS: Record<string, string> = {
-  木: '#4A834E',
-  火: '#DC4824',
-  土: '#B98C31',
-  金: '#788491',
-  水: '#31669B',
+  木: 'var(--el-wood)',
+  火: 'var(--el-fire)',
+  土: 'var(--el-earth)',
+  金: 'var(--el-metal)',
+  水: 'var(--el-water)',
 };
 
 const W = 380;
@@ -55,7 +55,7 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
       style={{ width: '100%', height: 'auto', display: 'block' }}
     >
       {/* 零基准圆（虚线：气机为零） */}
-      <circle cx={CX} cy={CY} r={R0} fill="none" stroke="hsl(222 10% 85%)" strokeWidth={1} strokeDasharray="3 3" />
+      <circle cx={CX} cy={CY} r={R0} fill="none" stroke="var(--chart-grid)" strokeWidth={1.1} strokeDasharray="3 3" />
 
       {/* 12 阶段辐条 + 外环 */}
       {stages.map((s) => {
@@ -65,8 +65,8 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
         const anchor = Math.abs(lp.x - CX) < 6 ? 'middle' : lp.x > CX ? 'start' : 'end';
         return (
           <g key={s.stage}>
-            <line x1={CX} y1={CY} x2={p1.x} y2={p1.y} stroke="hsl(222 12% 92%)" strokeWidth={1} />
-            <circle cx={p0.x} cy={p0.y} r={1.6} fill="hsl(222 10% 70%)" />
+            <line x1={CX} y1={CY} x2={p1.x} y2={p1.y} stroke="var(--chart-grid)" strokeOpacity={0.55} strokeWidth={1} />
+            <circle cx={p0.x} cy={p0.y} r={1.8} fill="var(--chart-ghost)" />
             <text
               x={lp.x}
               y={lp.y}
@@ -74,7 +74,7 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
               dominantBaseline="middle"
               fontSize={11}
               fontWeight={700}
-              fill={s.power >= 18 ? '#2E7654' : s.power <= -12 ? '#E31C29' : 'hsl(222 10% 45%)'}
+              fill={s.power >= 18 ? 'var(--semantic-useful)' : s.power <= -12 ? 'var(--semantic-taboo)' : 'var(--chart-axis)'}
               style={{ fontFamily: 'var(--font-sans)' }}
             >
               {s.stage}
@@ -84,20 +84,25 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
       })}
 
       {/* 气机剖面：12 阶段径向长度构成的闭合波动曲线 */}
-      <path d={profilePath} fill="rgba(227,28,41,0.045)" stroke="hsl(222 14% 16%)" strokeWidth={1.5} strokeLinejoin="round" />
+      <path d={profilePath} fill="var(--chart-area-tint)" stroke="var(--chart-curve)" strokeWidth={1.6} strokeLinejoin="round" />
 
-      {/* 峰值 / 谷值标记（帝旺=峰、绝=谷） */}
+      {/* 峰值 / 谷值辅助虚线射线（外圈帝旺/绝标签已高亮，避免在数据方框处重复文字遮挡） */}
       {stages.map((s) => {
         if (s.power !== maxAbs && s.power !== -maxAbs) return null;
         const p = polar(s.ringIndex, R0 + s.power * K);
-        const col = s.power > 0 ? '#2E7654' : '#E31C29';
+        const col = s.power > 0 ? 'var(--semantic-useful)' : 'var(--semantic-taboo)';
         return (
-          <g key={`ext-${s.stage}`}>
-            <line x1={p.x} y1={p.y} x2={CX} y2={CY} stroke={col} strokeWidth={1} strokeDasharray="2 3" opacity={0.5} />
-            <text x={p.x} y={p.y - 6} textAnchor="middle" fontSize={9} fontWeight={800} fill={col} style={{ fontFamily: 'var(--font-mono)' }}>
-              {s.stage}
-            </text>
-          </g>
+          <line
+            key={`ext-${s.stage}`}
+            x1={p.x}
+            y1={p.y}
+            x2={CX}
+            y2={CY}
+            stroke={col}
+            strokeWidth={1.1}
+            strokeDasharray="2 3"
+            opacity={0.55}
+          />
         );
       })}
 
@@ -111,19 +116,19 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
           const rad = R0 + e.power * K;
           const x = CX + rad * Math.cos(a) + tx * off;
           const y = CY + rad * Math.sin(a) + ty * off;
-          const col = ELEMENT_COLORS[e.element] ?? '#788491';
+          const col = ELEMENT_COLORS[e.element] ?? 'var(--semantic-neutral)';
           return (
             <g key={e.stem}>
               {e.inChart ? (
                 <>
-                  <rect x={x - 8} y={y - 8} width={16} height={16} fill={col} stroke="hsl(222 14% 16%)" strokeWidth={1.5} />
-                  <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={900} fill="#FFFFFF" style={{ fontFamily: 'var(--font-sans)' }}>
+                  <rect x={x - 8} y={y - 8} width={16} height={16} rx={2} fill={col} stroke="var(--chart-curve)" strokeWidth={1.3} />
+                  <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={900} fill="var(--chart-node-bg)" style={{ fontFamily: 'var(--font-sans)' }}>
                     {e.stem}
                   </text>
                 </>
               ) : (
                 <>
-                  <rect x={x - 6} y={y - 6} width={12} height={12} fill="#FFFFFF" stroke={col} strokeWidth={1} opacity={0.85} />
+                  <rect x={x - 6} y={y - 6} width={12} height={12} rx={1.5} fill="var(--chart-node-bg)" stroke={col} strokeWidth={1} opacity={0.85} />
                   <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={9} fontWeight={700} fill={col} style={{ fontFamily: 'var(--font-sans)' }}>
                     {e.stem}
                   </text>
@@ -135,10 +140,10 @@ export default function ChangShengRingChart({ ring }: { ring: ChangShengRingResu
       })}
 
       {/* 环心：月令标注 */}
-      <text x={CX} y={CY - 6} textAnchor="middle" fontSize={13} fontWeight={900} fill="hsl(222 14% 16%)" style={{ fontFamily: 'var(--font-sans)' }}>
+      <text x={CX} y={CY - 6} textAnchor="middle" fontSize={14} fontWeight={900} fill="var(--foreground)" style={{ fontFamily: 'var(--font-serif)' }}>
         {ring.monthName}
       </text>
-      <text x={CX} y={CY + 10} textAnchor="middle" fontSize={9} fontWeight={700} fill="hsl(222 10% 45%)" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
+      <text x={CX} y={CY + 10} textAnchor="middle" fontSize={9} fontWeight={700} fill="var(--muted-foreground)" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
         月令·气机
       </text>
     </svg>
