@@ -8,10 +8,10 @@
 
 ## 项目现状
 
-**项目**：`tzy` — 沛然堂 · 八字命理智能分析系统（React + Vite + Tailwind v4）
-**仓库**：`Whensunnypassed/tzy`（GitHub，main 分支）
-**当前版本**：**天枢 1.3.0 · 正式版**（`package.json` 与 `BaZiAnalyzerPage.tsx` 中 `APP_VERSION` 两处同步维护）
-**线上地址**：https://whensunnypassed.github.io/tzy/ （由 gh-pages 分支驱动部署）
+**项目**：`peirantang` — 天枢 · 沛然堂八字系统（React + Vite + Tailwind v4）
+**仓库**：`Whensunnypassed/peirantang`（GitHub，main 分支）
+**当前版本**：**天枢 1.3.0 · 正式版**（`package.json` 与 `constants.ts` 中 `APP_VERSION` 两处同步维护）
+**线上地址**：https://whensunnypassed.github.io/peirantang/ （由 gh-pages 分支驱动部署）
 **工作区状态**：天枢 1.0.0 → 1.3.0 全部已提交；main 已推送，gh-pages 已上线（部署记录见 CHANGELOG）。
 
 ---
@@ -95,7 +95,7 @@
 | `docs/SYNC.md` | 同步 GitHub 标准步骤 |
 | `docs/PROJECT_STATUS.md` | 本文档：项目状态与工作记录 |
 | `reference/docs/` | 命理理论参考文档（《自然易鉴》《太极阴阳法》等） |
-| `vite.config.ts` | base=/tzy/ 配置（GitHub Pages 子路径），端口 8001 |
+| `vite.config.ts` | base=/peirangtang/ 配置（GitHub Pages 子路径），端口 8001 |
 
 ---
 

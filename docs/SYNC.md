@@ -1,6 +1,6 @@
 # 同步 GitHub 标准步骤
 
-> 仓库：`Whensunnypassed/tzy`（分支 `main`）
+> 仓库：`Whensunnypassed/peirantang`（分支 `main`）
 > 适用：任何模型/开发者接手本项目后，按以下流程将本地改动同步到 GitHub。
 
 ---
@@ -8,7 +8,7 @@
 ## ① 检查改动与构建验证
 
 ```powershell
-cd "<仓库根目录>"   # 本机为 D:\tzy\tzy-remote
+cd "<仓库根目录>"   # 本机为 d:\peirangtang
 git status              # 查看改动文件
 npm.cmd run build:pages # vite build 验证（必须通过才能提交）
 ```
@@ -50,8 +50,8 @@ npm.cmd run build:pages   # 生成 dist/（含 404.html 复制）
 npx gh-pages -d dist      # 推送到 gh-pages 分支
 ```
 
-- 线上地址：`https://Whensunnypassed.github.io/tzy/`
-- base 已配置为 `/tzy/`（见 `vite.config.ts`，可用环境变量 `VITE_PAGES_BASE` 覆盖）。
+- 线上地址：`https://Whensunnypassed.github.io/peirantang/`
+- base 已配置为 `/peirantang/`（见 `vite.config.ts`，可用环境变量 `VITE_PAGES_BASE` 覆盖）。
 
 ---
 

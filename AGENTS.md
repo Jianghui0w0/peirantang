@@ -12,7 +12,7 @@
 
 - 品牌：沛然堂（页头 `PEIRANTANG BAZI SYSTEM · RUNS FULLY LOCAL`）。
 - 产品名：天枢。
-- 上线地址：GitHub Pages（仓库 `Whensunnypassed/tzy`）。
+- 上线地址：GitHub Pages（仓库 `Whensunnypassed/peirantang`）。
 - 三条线共用同一份排盘结果：**阴阳线**（现行，元素级）、**希腊线**（希腊占星，异源对照）、**大杂烩线**（门派登记 + 断学业/爱情/财富）。推步线已于 2026-11-05 整体下线并删除代码。
 
 ---
