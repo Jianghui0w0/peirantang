@@ -6,9 +6,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// GitHub Pages 部署基路径：仓库名是 tzy → base = /tzy/
+// GitHub Pages 部署基路径：仓库名是 peirantang → base = /peirantang/
 // 可通过环境变量 VITE_PAGES_BASE 覆盖（仓库名变更时不用改代码）
-const DEFAULT_PAGES_BASE = '/tzy/';
+const DEFAULT_PAGES_BASE = '/peirantang/';
 const rawBase = (process.env.VITE_PAGES_BASE || DEFAULT_PAGES_BASE).trim();
 // 规范化：保证开头有 /，结尾无 /，传给 React Router basename
 const normalizedForRouter = rawBase.replace(/\/+$/, '') || '/';
