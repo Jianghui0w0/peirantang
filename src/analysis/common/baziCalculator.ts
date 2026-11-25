@@ -18,6 +18,7 @@ import {
   getDaysToNextTerm,
   getDaysToPrevTerm,
 } from './solarTermsCalc';
+import { findCity, resolveUtcOffsetMinutes } from '@/data/cityData';
 
 // 十天干索引
 const STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
@@ -146,9 +147,10 @@ const getDayPillar = (year: number, month: number, day: number): { stem: string;
   const baseStemIndex = 4; // 戊
   const baseBranchIndex = 6; // 午
 
-  const date1 = new Date(baseYear, baseMonth - 1, baseDay);
-  const date2 = new Date(year, month - 1, day);
-  const diffDays = Math.round((date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24));
+  // 纯 UTC 日历差，避免运行环境本地时区或夏令时导致差值漂移
+  const utc1 = Date.UTC(baseYear, baseMonth - 1, baseDay);
+  const utc2 = Date.UTC(year, month - 1, day);
+  const diffDays = Math.round((utc2 - utc1) / 86400000);
 
   const stemIndex = ((baseStemIndex + diffDays) % 10 + 10) % 10;
   const branchIndex = ((baseBranchIndex + diffDays) % 12 + 12) % 12;
@@ -448,6 +450,23 @@ export interface BaZiChart {
   }>;
 }
 
+/** 构造单个柱对象（供完整排盘与手动四柱复用） */
+const buildPillar = (
+  stem: string,
+  branch: string,
+  dayMaster: string,
+  isDay: boolean = false,
+): Pillar => ({
+  stem,
+  branch,
+  stemElement: STEM_ELEMENTS[stem],
+  branchElement: BRANCH_ELEMENTS[branch],
+  stemYinYang: STEM_YINYANG[stem],
+  branchYinYang: BRANCH_YINYANG[branch],
+  hiddenStems: HIDDEN_STEMS[branch],
+  shiShen: isDay ? '日主' : getShiShen(dayMaster, stem),
+});
+
 export function calculateBaZi(
   year: number,
   month: number,
@@ -460,30 +479,62 @@ export function calculateBaZi(
   // 经度：城市表（CITY_DB）→ 出生地时区大区（BIRTH_REGION_CFG）→ 默认北京
   const longitude = birthRegionLongitude(birthPlace);
 
-  // ① 夏令时回拨：输入为出生地钟表时间，1986–1991 夏令时需先减 60 分钟得到标准时
-  const dstOffsetMinutes = chinaDstOffsetMinutes(year, month, day, hour, minute);
-  const std = normalizeDateTime(year, month, day, hour * 60 + minute - dstOffsetMinutes);
+  // 判断采用「中国标准时区（UTC+8 + 1986–1991 公告夏令时）」还是「具体城市/海外历史时区」
+  const isRegionKey = BIRTH_REGION_CFG.regions.some((r) => r.key === birthPlace);
+  const city = !isRegionKey ? findCity(birthPlace) : undefined;
+  const isChinaZone = isRegionKey || !city || city.rule === 'CN';
 
-  // ② 均时差按标准时日期取（年内日序），真太阳时 = 标准时 + 经度差 + 均时差
-  const eotMinutes = equationOfTimeMinutes(std.year, std.month, std.day);
-  const trueSolar = adjustTrueSolarTime(std.year, std.month, std.day, std.hour, std.minute, longitude, eotMinutes);
-  const longitudeOffsetMinutes = Math.round(
-    (longitude - BIRTH_REGION_CFG.standardMeridian) * BIRTH_REGION_CFG.minutesPerDegree,
-  );
+  let dstOffsetMinutes: number;
+  let std: ReturnType<typeof normalizeDateTime>;
+  let eotMinutes: number;
+  let trueSolar: ReturnType<typeof adjustTrueSolarTime>;
+  let longitudeOffsetMinutes: number;
+  let trueSolarOffsetMinutes: number;
 
-  // 年柱 / 月柱 / 起运：一律用标准时，与节气时刻（北京时间）同帧；真太阳时只用于日柱与时柱
+  if (isChinaZone) {
+    // ① 中国本土/大区：1986–1991 夏令时按钟表 02:00 边界回拨 60 分钟得到北京时间（UTC+8）
+    dstOffsetMinutes = chinaDstOffsetMinutes(year, month, day, hour, minute);
+    std = normalizeDateTime(year, month, day, hour * 60 + minute - dstOffsetMinutes);
+    // ② 均时差按标准时日期取（年内日序），真太阳时 = 标准时 + 经度差 + 均时差
+    eotMinutes = equationOfTimeMinutes(std.year, std.month, std.day);
+    trueSolar = adjustTrueSolarTime(std.year, std.month, std.day, std.hour, std.minute, longitude, eotMinutes);
+    longitudeOffsetMinutes = Math.round(
+      (longitude - BIRTH_REGION_CFG.standardMeridian) * BIRTH_REGION_CFG.minutesPerDegree,
+    );
+    trueSolarOffsetMinutes = trueSolar.offsetMinutes;
+  } else {
+    // ① 海外及港澳台特区：按城市所属历史时区规则求当地 UTC 偏移（含当地 DST），
+    //    再统一换算为「北京时间（UTC+8 = +480 分钟）」，保证年柱/月柱/起运与节气时刻完全同帧
+    const tz = resolveUtcOffsetMinutes(city, year, month, day);
+    dstOffsetMinutes = tz.isDst ? 60 : 0;
+    std = normalizeDateTime(year, month, day, hour * 60 + minute - tz.offsetMinutes + 480);
+    eotMinutes = equationOfTimeMinutes(std.year, std.month, std.day);
+    // 物理真太阳时 = UTC + 经度×4 + 均时差 = 北京时间 + (经度 - 120°)×4 + 均时差
+    trueSolar = adjustTrueSolarTime(std.year, std.month, std.day, std.hour, std.minute, longitude, eotMinutes);
+    // 展示用偏移量以当地标准时区中央经线为参照，避免跨时区造成千分钟级别误读
+    const localStdUtcMinutes = tz.offsetMinutes - dstOffsetMinutes;
+    const localMeridian = (localStdUtcMinutes / 60) * 15;
+    longitudeOffsetMinutes = Math.round(
+      (longitude - localMeridian) * BIRTH_REGION_CFG.minutesPerDegree,
+    );
+    trueSolarOffsetMinutes = Math.round(
+      (longitude - localMeridian) * BIRTH_REGION_CFG.minutesPerDegree + eotMinutes,
+    );
+  }
+
+  // 年柱 / 月柱 / 起运：一律用标准时（北京时间），与节气时刻同帧；真太阳时只用于日柱与时柱
   const yearPillar = getYearPillar(std.year, std.month, std.day, std.hour, std.minute);
   const monthPillar = getMonthPillar(yearPillar.stem, std.year, std.month, std.day, std.hour, std.minute);
 
-  // 日柱：日期随真太阳时跨日进位；23 点后为次日子时，再进一天
+  // 日柱：日期随真太阳时跨日进位；23 点后为次日子时，再进一天（使用 UTC 防止本地时区干扰）
   let dayYear = trueSolar.year;
   let dayMonth = trueSolar.month;
   let dayDay = trueSolar.day;
   if (trueSolar.hour === 23) {
-    const next = new Date(dayYear, dayMonth - 1, dayDay + 1);
-    dayYear = next.getFullYear();
-    dayMonth = next.getMonth() + 1;
-    dayDay = next.getDate();
+    const next = new Date(Date.UTC(dayYear, dayMonth - 1, dayDay + 1));
+    dayYear = next.getUTCFullYear();
+    dayMonth = next.getUTCMonth() + 1;
+    dayDay = next.getUTCDate();
   }
   const dayPillarRaw = getDayPillar(dayYear, dayMonth, dayDay);
 
@@ -498,25 +549,14 @@ export function calculateBaZi(
   // 日主天干
   const dayMaster = dayPillarRaw.stem;
 
-  const makePillar = (stem: string, branch: string, isDay: boolean = false): Pillar => ({
-    stem,
-    branch,
-    stemElement: STEM_ELEMENTS[stem],
-    branchElement: BRANCH_ELEMENTS[branch],
-    stemYinYang: STEM_YINYANG[stem],
-    branchYinYang: BRANCH_YINYANG[branch],
-    hiddenStems: HIDDEN_STEMS[branch],
-    shiShen: isDay ? '日主' : getShiShen(dayMaster, stem),
-  });
-
-  // 大运起运：同样用标准时与节气时刻同帧（夏令时已回拨）
+  // 大运起运：同样用标准时与节气时刻同帧（夏令时与海外时区已折算为北京时间）
   const daYun = getDaYun(std.year, std.month, std.day, std.hour, std.minute, gender, yearPillar.stem, monthPillar.stem, monthPillar.branch, monthPillar.branchIndex);
 
   return {
-    year: makePillar(yearPillar.stem, yearPillar.branch),
-    month: makePillar(monthPillar.stem, monthPillar.branch),
-    day: makePillar(dayPillarRaw.stem, dayPillarRaw.branch, true),
-    hour: makePillar(hourPillar.stem, hourPillar.branch),
+    year: buildPillar(yearPillar.stem, yearPillar.branch, dayMaster),
+    month: buildPillar(monthPillar.stem, monthPillar.branch, dayMaster),
+    day: buildPillar(dayPillarRaw.stem, dayPillarRaw.branch, dayMaster, true),
+    hour: buildPillar(hourPillar.stem, hourPillar.branch, dayMaster),
     monthBranchIndex: monthPillar.branchIndex,
     gender,
     birthInfo: {
@@ -524,7 +564,7 @@ export function calculateBaZi(
       solarTime: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
       birthPlace,
       trueSolarTime: `${trueSolar.hour.toString().padStart(2, '0')}:${trueSolar.minute.toString().padStart(2, '0')}`,
-      trueSolarOffset: trueSolar.offsetMinutes,
+      trueSolarOffset: trueSolarOffsetMinutes,
       standardTime: `${std.hour.toString().padStart(2, '0')}:${std.minute.toString().padStart(2, '0')}`,
       dstApplied: dstOffsetMinutes > 0,
       dstOffsetMinutes,
@@ -532,6 +572,81 @@ export function calculateBaZi(
       equationOfTimeMinutes: Math.round(eotMinutes * 10) / 10,
       trueSolarDate: `${trueSolar.year}年${trueSolar.month}月${trueSolar.day}日`,
       trueSolarDayOffset,
+    },
+    daYun,
+  };
+}
+
+/**
+ * 由指定四柱直接构建完整命盘（供手动四柱分析与案例回归复用，消除页面层重复构建逻辑）。
+ * 注：手动四柱无精确节气边界，大运默认按 1 岁起运近似。
+ */
+export function buildChartFromPillars(params: {
+  year: [string, string];
+  month: [string, string];
+  day: [string, string];
+  hour: [string, string];
+  gender: 'male' | 'female';
+  birthYear?: number;
+  birthPlace?: string;
+}): BaZiChart {
+  const {
+    year: [ys, yb],
+    month: [ms, mb],
+    day: [ds, db],
+    hour: [hs, hb],
+    gender,
+    birthYear = 1990,
+    birthPlace = '北京',
+  } = params;
+  const monthBranchIndex = MONTH_BRANCHES.indexOf(mb);
+  if (monthBranchIndex < 0) {
+    throw new Error(`非法月支：${mb}`);
+  }
+
+  // 大运：年干阴阳 + 性别定顺逆，从月柱起推 8 步
+  const shunPai = (STEM_YINYANG[ys] === 'yang' && gender === 'male')
+    || (STEM_YINYANG[ys] === 'yin' && gender === 'female');
+  const monthIdx = JIA_ZI_60.indexOf(`${ms}${mb}`);
+  const startAge = 1;
+  const daYun: BaZiChart['daYun'] = [];
+  for (let i = 0; i < 8; i++) {
+    const idx = shunPai
+      ? (monthIdx + 1 + i) % 60
+      : (((monthIdx - 1 - i) % 60) + 60) % 60;
+    const gz = JIA_ZI_60[idx] ?? '甲子';
+    const dyStartAge = startAge + i * 10;
+    daYun.push({
+      index: i,
+      stem: gz[0],
+      branch: gz[1],
+      startAge: dyStartAge,
+      startYear: birthYear + dyStartAge,
+      endYear: birthYear + dyStartAge + 9,
+      daysToJie: 0,
+    });
+  }
+
+  return {
+    year: buildPillar(ys, yb, ds),
+    month: buildPillar(ms, mb, ds),
+    day: buildPillar(ds, db, ds, true),
+    hour: buildPillar(hs, hb, ds),
+    monthBranchIndex,
+    gender,
+    birthInfo: {
+      solarDate: `${birthYear}年（手动四柱）`,
+      solarTime: '—',
+      birthPlace,
+      trueSolarTime: '—',
+      trueSolarOffset: 0,
+      standardTime: '—',
+      dstApplied: false,
+      dstOffsetMinutes: 0,
+      longitudeOffsetMinutes: 0,
+      equationOfTimeMinutes: 0,
+      trueSolarDate: `${birthYear}年（手动四柱）`,
+      trueSolarDayOffset: 0,
     },
     daYun,
   };

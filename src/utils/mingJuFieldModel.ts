@@ -360,8 +360,9 @@ export function buildMingJuField(
     if (change === 'increase') return mark === 'useful' ? 'gain' : 'loss';
     return mark === 'taboo' ? 'gain' : 'loss';
   };
-  // 注入字 e₀ 的作用向量：自身 +w_add、所生 +λ·w_add、所克 −λ·w_add
-  const buildEffects = (element: FieldElement, wAdd: number): MingJuFieldEffect[] => {
+  // 注入字 e₀ 的作用向量：自身权重 wAdd、所生 +λ·wAdd、所克 -λ·wAdd
+  // 自身项必须采用月令逐字资料库的干支级判定 selfMark（否则辰月甲木、戌亥乙木与冬夏土会出现字标用/曲判凶的自相矛盾）
+  const buildEffects = (element: FieldElement, wAdd: number, selfMark: XiJiMark): MingJuFieldEffect[] => {
     const items: Array<{ element: FieldElement; kind: FieldEffectKind; weightDelta: number }> = [
       { element, kind: 'self', weightDelta: wAdd },
       { element: FIELD_SHENG_MAP[element], kind: 'generates', weightDelta: shengKeCoupling * wAdd },
@@ -369,7 +370,7 @@ export function buildMingJuField(
     ];
     return items.map(({ element: el, kind, weightDelta }) => {
       const change: 'increase' | 'decrease' = weightDelta >= 0 ? 'increase' : 'decrease';
-      const mark = elemMark(el);
+      const mark = kind === 'self' ? selfMark : elemMark(el);
       return {
         element: el,
         kind,
@@ -388,15 +389,27 @@ export function buildMingJuField(
     const mark = (kind === 'stem' ? yongJi.allStemMarks[char] : yongJi.allBranchMarks[char]) ?? 'neutral';
     const weight = kind === 'stem' ? injectStemWeight : injectBranchWeight;
     const sign = signOfElement(element);
-    const effects = buildEffects(element, weight);
+    const effects = buildEffects(element, weight, mark);
     const axisDeltas = FIELD_ELEMENT_ORDER.map((el) => {
       const eff = effects.find((x) => x.element === el);
       return eff ? eff.axisDelta : 0;
     });
-    const gains = effects.filter((e) => e.verdict === 'gain').length;
-    const losses = effects.filter((e) => e.verdict === 'loss').length;
+    // 按作用权重累计净得失，保证主干权重（1.0）主导而不会被单个耦合项（0.45）颠倒
+    let gainWeight = 0;
+    let lossWeight = 0;
+    for (const e of effects) {
+      const aw = Math.abs(e.weightDelta);
+      if (e.verdict === 'gain') gainWeight += aw;
+      else if (e.verdict === 'loss') lossWeight += aw;
+    }
     const verdict: FieldVerdict =
-      gains > losses ? 'gain' : losses > gains ? 'loss' : gains === 0 && losses === 0 ? 'flat' : 'mixed';
+      gainWeight === 0 && lossWeight === 0
+        ? 'flat'
+        : lossWeight === 0 || (gainWeight > lossWeight * 1.4 && gainWeight - lossWeight > 0.25 * weight)
+          ? 'gain'
+          : gainWeight === 0 || (lossWeight > gainWeight * 1.4 && lossWeight - gainWeight > 0.25 * weight)
+            ? 'loss'
+            : 'mixed';
     candidates.push({
       id: `${kind === 'stem' ? '干' : '支'}·${char}`,
       kind,

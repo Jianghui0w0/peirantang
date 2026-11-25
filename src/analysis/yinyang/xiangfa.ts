@@ -16,6 +16,7 @@ import {
   judgeEarthXiJi,
   calculateYinYangBalance,
   type MonthQiResult,
+  type YongJiResult,
 } from './engine';
 import {
   XIANG_YI_ELEMENTS,
@@ -74,7 +75,10 @@ export function analyzeXiangYi(
   const dayEl = STEM_ELEMENTS[dayStem];
   const info = elementData(dayEl);
   const stemInfo = STEM_YINYANG[dayStem] === 'yang' ? info.stemYang : info.stemYin;
-  const monthFlow = monthQi ? `${monthQi.monthName}月 · ${info.monthFlow}` : info.monthFlow;
+  const monthNameText = monthQi
+    ? (monthQi.monthName.endsWith('月') ? monthQi.monthName : `${monthQi.monthName}月`)
+    : '';
+  const monthFlow = monthQi ? `${monthNameText} · ${info.monthFlow}` : info.monthFlow;
   const positions = ['年', '月', '日', '时'];
   const pillars = [chart.year, chart.month, chart.day, chart.hour].map((p, i) => ({
     position: positions[i],
@@ -229,13 +233,17 @@ export function scoreEducationLevel(
   const pillars = [chart.year, chart.month, chart.hour];
   const ten = pillars.map((p) => p.shiShen || '');
   const count = (kw: string) => ten.filter((s) => s.includes(kw)).length;
-  const elOf = (kw: string) => {
+  const elOf = (kw: string, exact = false) => {
     const els = new Set<string>();
-    pillars.forEach((p) => { if ((p.shiShen || '').includes(kw)) els.add(STEM_ELEMENTS[p.stem]); });
+    pillars.forEach((p) => {
+      const sh = p.shiShen || '';
+      if (exact ? (sh === '正财' || sh === '偏财') : sh.includes(kw)) els.add(STEM_ELEMENTS[p.stem]);
+    });
     return els;
   };
   const yinStar = count('印');
-  const caiStar = count('财');
+  // 仅认正财/偏财，防止「劫财」被 includes('财') 误计为财星
+  const caiStar = ten.filter((s) => s === '正财' || s === '偏财').length;
   const shiShang = count('食') + count('伤');
   const guanSha = count('官') + count('杀');
   const biJie = count('比') + count('劫');
@@ -293,6 +301,33 @@ export function scoreEducationLevel(
     if (score >= item.min && score <= item.max) { lv = item; break; }
   }
   return { score, level: lv.level, levelDesc: lv.desc, reasons };
+}
+
+/**
+ * 选取覆盖关键求学阶段（16–22 岁，即高中学业至本科毕业窗口）的主导大运。
+ * 保证学历倾向判定只随原局与求学黄金期大运走，不再因用户在哪一年打开页面（currentYear 漂移）而变卦。
+ */
+export function pickStudyDayun<T extends { startAge: number; stem: string; branch: string; letterLevel?: string; displayScore?: number }>(
+  daYunList: readonly T[] | null | undefined,
+): T | null {
+  if (!daYunList || daYunList.length === 0) return null;
+  const WINDOW_START = 16;
+  const WINDOW_END = 22;
+  let best = daYunList[0];
+  let bestOverlap = -1;
+  let bestDist = Infinity;
+  for (const dy of daYunList) {
+    const endAge = dy.startAge + 9;
+    const overlap = Math.max(0, Math.min(endAge, WINDOW_END) - Math.max(dy.startAge, WINDOW_START) + 1);
+    const midAge = dy.startAge + 4.5;
+    const dist = Math.abs(midAge - 19);
+    if (overlap > bestOverlap || (overlap === bestOverlap && dist < bestDist)) {
+      bestOverlap = overlap;
+      bestDist = dist;
+      best = dy;
+    }
+  }
+  return best;
 }
 
 export function analyzeEducationVerdict(
@@ -589,21 +624,31 @@ export interface EarthXiJiResult {
 export function analyzeEarthXiJi(
   chart: BaZiChart,
   monthQi: MonthQiResult | null,
+  yongJi?: YongJiResult | null,
 ): EarthXiJiResult {
   const yinYang = calculateYinYangBalance(chart);
-  const earthGanzhi: string[] = [];
+  const earthItems: Array<{ ganzhi: string; isStem: boolean }> = [];
+  const seen = new Set<string>();
   [chart.year, chart.month, chart.day, chart.hour].forEach((p) => {
-    if (STEM_ELEMENTS[p.stem] === 'earth') earthGanzhi.push(p.stem);
-    if (BRANCH_ELEMENTS[p.branch] === 'earth') earthGanzhi.push(p.branch);
+    if (STEM_ELEMENTS[p.stem] === 'earth' && !seen.has(p.stem)) {
+      seen.add(p.stem);
+      earthItems.push({ ganzhi: p.stem, isStem: true });
+    }
+    if (BRANCH_ELEMENTS[p.branch] === 'earth' && !seen.has(p.branch)) {
+      seen.add(p.branch);
+      earthItems.push({ ganzhi: p.branch, isStem: false });
+    }
   });
-  const unique = Array.from(new Set(earthGanzhi));
-  const details = unique.map((gz) => {
-    const mark = judgeEarthXiJi(gz, chart, yinYang);
+  const unique = earthItems.map((it) => it.ganzhi);
+  // 统一真源：优先取用忌分析（月令逐字资料库）中的干支级标记，消除四柱徽章与土专区的口径分裂
+  const details = earthItems.map(({ ganzhi: gz, isStem }) => {
+    const fromYongJi = isStem ? yongJi?.allStemMarks[gz] : yongJi?.allBranchMarks[gz];
+    const mark = fromYongJi ?? judgeEarthXiJi(gz, chart, yinYang);
     const note = mark === 'useful'
-      ? '此土干支宜用（可止寒制水 / 晦火存金 / 固本培元）'
+      ? '此土干支宜用（可止寒制水 / 晦火存金 / 冲库救应）'
       : mark === 'taboo'
         ? '此土干支不宜取用（土旺晦火 / 克水损智 / 独旺失衡）'
-        : '此土干支为调和位，视组合生克而定';
+        : '此土干支为调和或双面待定，视组合生克与合化而定';
     return { ganzhi: gz, mark, note };
   });
 
@@ -626,17 +671,17 @@ export function analyzeEarthXiJi(
   const mbi = chart.monthBranchIndex;
   let monthReason = '';
   if ([9, 10, 11].includes(mbi)) {
-    monthReason = `${monthQi?.monthName ?? ''}（冬月）水寒当令，土可止寒制水、治乱固本，为取用土之利季`;
+    monthReason = `${monthQi?.monthName ?? ''}（冬月）水寒当令，阳土可止寒制水、治乱固本，阴土须防蓄水助寒`;
   } else if ([3, 4, 5].includes(mbi)) {
-    monthReason = `${monthQi?.monthName ?? ''}（夏月）火燥当令，阴土（丑戌）可晦火存金宜取；辰未见水则凶、无水次选`;
+    monthReason = `${monthQi?.monthName ?? ''}（夏月）火燥当令，阴土（丑戌）可晦火存金宜取；辰未见水则凶、无水待辨`;
   } else if ([0, 1].includes(mbi)) {
-    monthReason = `${monthQi?.monthName ?? ''}（春月）余寒未消，土可止寒固本；若阴气不显（<30%）则勿土克水`;
+    monthReason = `${monthQi?.monthName ?? ''}（春月）余寒未消，阳土可止寒固本；卯月则须防过克弱水`;
   } else if (mbi === 2) {
-    monthReason = `${monthQi?.monthName ?? ''}（辰月）辰土晦火克水需制，不宜取用`;
+    monthReason = `${monthQi?.monthName ?? ''}（辰月）本气戊辰晦火克水为忌；惟见戌土冲辰开水库可作调和救应`;
   } else if ([6, 7].includes(mbi)) {
-    monthReason = `${monthQi?.monthName ?? ''}（秋月）忌土旺（土旺晦火、失富）`;
+    monthReason = `${monthQi?.monthName ?? ''}（秋月）土性双面（制水有贵、晦火失富），须辨干支与余热/成凉态势`;
   } else if (mbi === 8) {
-    monthReason = `${monthQi?.monthName ?? ''}（戌月）独旺土，不宜取用`;
+    monthReason = `${monthQi?.monthName ?? ''}（戌月）当令土旺晦火为忌，须甲木疏土破阴`;
   }
 
   const reason = `【${overall}】${monthReason}。土为中宫承载制衡之气，无专属阴阳，寄旺四季，为格局基础（无土不成局）；可纳阳止阴，吉则为取富取贵的辅助工具，凶则阻碍富贵、破坏格局。当前命局阴阳气占比：阳气${yinYang.yang.toFixed(1)}%、阴气${yinYang.yin.toFixed(1)}%。${unique.length > 0 ? `命局含土干支：${unique.join('·')}。` : '命局天干地支未见土气，需借岁运引动。'}`;

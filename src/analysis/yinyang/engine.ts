@@ -516,9 +516,9 @@ const ZHUZI_XIJI_REF: Record<string, ZhuZiMonthRef> = ZHUZI_XIJI_CFG.months;
 const ZHUZI_ROUND_MARKS: Record<string, Record<string, { hot: ZhuZiMark; cool: ZhuZiMark }>> = ZHUZI_XIJI_CFG.rounds;
 
 
-// 申月两局判定（余热/成凉）→ 'hot' | 'cool'；非申月返回 null
+// 申酉两月「余热 / 成凉」两局判定：已辨局返回 'hot' | 'cool'；其余月份返回 null
 function autumnRoundKey(chart: BaZiChart, monthBranch: string): 'hot' | 'cool' | null {
-  if (monthBranch !== '申') return null;
+  if (monthBranch !== '申' && monthBranch !== '酉') return null;
   return detectAutumnHotRound(chart) ? 'hot' : 'cool';
 }
 
@@ -539,7 +539,7 @@ export function analyzeZhuZiXiJi(monthBranch: string, monthQi: MonthQiResult, ch
       source: '《十二月份取用》（资料缺月，按大方向推导）',
     };
   }
-  // 申月：按已算出的局（余热/成凉）把有明确方向者落定为用/忌，其余保留条件说明
+  // 申酉月：按已算出的局（余热/成凉）把两局相反之字落定为用/忌，其余土性及条件字保留说明
   const roundKey = chart ? autumnRoundKey(chart, monthBranch) : null;
   const roundMap = roundKey ? ZHUZI_ROUND_MARKS[monthBranch] : undefined;
   const applyRound = (char: string, row: ZhuZiRefRow): ZhuZiRefRow => {
@@ -590,7 +590,7 @@ export function monthCharMark(
   if (!ref) return fallback;
   const row = isStem ? ref.stems[char] : ref.branches[char];
   if (!row) return fallback;
-  // 申月已定局者按局落定（与 analyzeZhuZiXiJi 同源），保证四柱徽章/藏干/大运流年打分与逐字表一致
+  // 申酉月已定局者按局落定（与 analyzeZhuZiXiJi 同源），保证四柱徽章/藏干/大运流年打分与逐字表一致
   const roundKey = chart ? autumnRoundKey(chart, monthBranch) : null;
   const rm = roundKey ? ZHUZI_ROUND_MARKS[monthBranch]?.[char] : undefined;
   if (rm) return ZHUZI_TO_XIJI[roundKey === 'hot' ? rm.hot : rm.cool];
@@ -762,55 +762,169 @@ export function analyzeNianYueTaiJi(
   }
   evidence.push(`年支作用：${LAO_GAO_KOU_JING_CFG.yearPillar.twoSteps[1]}年柱本身无吉凶，只是一种作用模式，吉凶到月令里才产生。${yearBranchReason}`);
 
-  // ⑤ 两仪气机厚薄评估（十二长生为唯一气机强弱标准 + 透干/藏干/无现）
+  // ⑤ 两仪气机厚薄评估（十二长生 + 本仪/同气干支/地支实根 + 埋压融克与通关救应）
+  const PARTNER_STEM: Record<string, string> = {
+    甲: '乙', 乙: '甲',
+    丙: '丁', 丁: '丙',
+    戊: '己', 己: '戊',
+    庚: '辛', 辛: '庚',
+    壬: '癸', 癸: '壬',
+  };
+  const MAIN_BRANCHES_BY_EL: Record<string, string[]> = {
+    wood: ['寅', '卯'],
+    fire: ['巳', '午'],
+    earth: ['辰', '戌', '丑', '未'],
+    metal: ['申', '酉'],
+    water: ['亥', '子'],
+  };
+  const monthEl = BRANCH_ELEMENTS[chart.month.branch];
+  const summerFireBranches = chartBranches.filter((b) => b === '巳' || b === '午' || b === '未').length;
+  const earthBranches = chartBranches.filter((b) => BRANCH_ELEMENTS[b] === 'earth').length;
+  const hasRealWater = chartStems.some((s) => STEM_ELEMENTS[s] === 'water')
+    || chartBranches.some((b) => BRANCH_ELEMENTS[b] === 'water');
+  const hasWoodRelief = chartStems.some((s) => s === '甲' || s === '乙')
+    || chartBranches.some((b) => b === '寅' || b === '卯');
+  const hasGoldForWater = chartStems.some((s) => s === '庚' || s === '辛')
+    || chartBranches.some((b) => b === '申' || b === '酉');
+  // 暗拱/暗合火局（如寅戌拱午、卯戌合火），识别未明透丙丁时的暗阳之基
+  const hasHiddenFireArch =
+    (chartBranches.includes('寅') && chartBranches.includes('戌'))
+    || (chartBranches.includes('卯') && chartBranches.includes('戌'));
+
   const evalYi = (yiStem: string, role: string): NianYueYiGong => {
-    const el = elementName(STEM_ELEMENTS[yiStem]);
+    const el = STEM_ELEMENTS[yiStem];
+    const elName = elementName(el);
+    const partner = PARTNER_STEM[yiStem] ?? '';
     const cs = SHI_ER_CHANG_SHENG[chart.month.branch]?.[yiStem] ?? '—';
-    let power = CHANG_SHENG_POWER[cs] ?? 0;
+    const csPartner = partner ? (SHI_ER_CHANG_SHENG[chart.month.branch]?.[partner] ?? cs) : cs;
+    const exactStemCount = chartStems.filter((s) => s === yiStem).length;
+    const partnerStemCount = partner ? chartStems.filter((s) => s === partner).length : 0;
+    const mainBranches = chartBranches.filter((b) => (MAIN_BRANCHES_BY_EL[el] ?? []).includes(b));
+    const hiddenBranches = chartBranches.filter((b) =>
+      (HIDDEN_STEM_MAP[b] || []).includes(yiStem) || (partner ? (HIDDEN_STEM_MAP[b] || []).includes(partner) : false),
+    );
+
+    // 若本字不透而由同气替身透干（如巳月见辛、卯月见丁/壬），长生取实际透出字的气机状态
+    const effCs = exactStemCount > 0 ? cs : partnerStemCount > 0 ? csPartner : cs;
+    let power = CHANG_SHENG_POWER[effCs] ?? 0;
     let state: NianYueYiGong['state'];
     const factors: string[] = [];
-    if (chartStems.includes(yiStem)) {
-      power += 60;
+
+    // 月令本气同属此仪：月令自带先天护持，不可因缺字面字符而误判无根绝境
+    const inCommand = monthEl === el;
+    if (inCommand) {
+      power += 28;
+      factors.push(`月令得位：月支${chart.month.branch}本气即属${elName}，先天有令护持（+28）`);
+    }
+
+    if (exactStemCount > 0) {
+      power += 56 + (exactStemCount - 1) * 6;
       state = '彰显';
-      factors.push(`透干彰显：${yiStem}现于四柱天干（${chartStems.filter((s) => s === yiStem).length}处），气机明显发用`);
-    } else if (chartBranches.some((b) => (HIDDEN_STEM_MAP[b] || []).includes(yiStem))) {
-      power += 40;
+      factors.push(`透干彰显：${yiStem}现于四柱天干（${exactStemCount}处），气机明显发用`);
+      if (mainBranches.length > 0) {
+        power += 8;
+        factors.push(`地支通根：兼得${mainBranches.join('、')}本气实根（+8）`);
+      }
+    } else if (partnerStemCount > 0) {
+      power += 46 + (partnerStemCount - 1) * 4;
+      state = '彰显';
+      factors.push(`同气透干：虽未见「${yiStem}」，然同气${partner}透干（${partnerStemCount}处，长生「${csPartner}」），同气发用`);
+      if (mainBranches.length > 0) {
+        power += 8;
+        factors.push(`地支通根：兼得${mainBranches.join('、')}本气实根（+8）`);
+      }
+    } else if (mainBranches.length > 0) {
+      power += 42;
       state = '暗藏';
-      factors.push(`地支暗藏：${yiStem}藏于${chartBranches.filter((b) => (HIDDEN_STEM_MAP[b] || []).includes(yiStem)).join('、')}，有根而未透`);
+      factors.push(`地支坐实：虽未透干，然地支见本气旺地${mainBranches.join('、')}，此仪根气扎实`);
+    } else if (hiddenBranches.length > 0) {
+      // 区分「实根暗藏」与「重土埋微水 / 火海熔孤金」
+      const waterBuriedByEarth =
+        el === 'water'
+        && !hasRealWater
+        && !hasWoodRelief
+        && !hasGoldForWater
+        && (earthBranches >= 3 || (earthBranches >= 2 && chartStems.some((s) => STEM_ELEMENTS[s] === 'earth')));
+      if (waterBuriedByEarth) {
+        power += 10;
+        state = '暗藏';
+        factors.push(`藏干受埋：${yiStem}仅伏藏于${hiddenBranches.join('、')}中，外有重土围克而无木金救应，气机受抑`);
+      } else {
+        power += 36;
+        state = '暗藏';
+        factors.push(`地支暗藏：${yiStem}（或同气${partner}）藏于${hiddenBranches.join('、')}，有根而未透`);
+      }
+    } else if (el === 'fire' && hasHiddenFireArch) {
+      power += 30;
+      state = '暗藏';
+      factors.push('暗拱合火：地支见寅戌/卯戌拱合火局，阳仪暗聚有根');
     } else {
       state = '不见';
-      factors.push(`全盘不见：${yiStem}不透不藏，此仪之气缺位`);
+      factors.push(`全盘不见：${yiStem}及同气${partner}均不透不藏，此仪之气缺位`);
     }
-    factors.push(`月令长生：${yiStem}落${chart.month.branch}月为「${cs}」，${(CHANG_SHENG_POWER[cs] ?? 0) >= 18 ? '得令气厚' : (CHANG_SHENG_POWER[cs] ?? 0) >= 0 ? '气机中平' : '失令气薄'}`);
-    // 受克损伤（四柱天干克此仪）
-    const hurtByStems = chartStems.filter((s) => KE_MAP[STEM_ELEMENTS[s]] === STEM_ELEMENTS[yiStem]);
-    const hurtBy = hurtByStems.length;
-    const hurt = hurtBy * 14;
+
+    factors.push(`月令长生：${exactStemCount === 0 && partnerStemCount > 0 ? partner : yiStem}落${chart.month.branch}月为「${effCs}」，${(CHANG_SHENG_POWER[effCs] ?? 0) >= 18 ? '得令气厚' : (CHANG_SHENG_POWER[effCs] ?? 0) >= 0 ? '气机中平' : '失令气薄'}`);
+
+    // 受克损伤评估（区分通关调候轻克 vs 实伤重克）
+    const hurtByStems = chartStems.filter((s) => KE_MAP[STEM_ELEMENTS[s]] === el);
+    const hurtEl = (Object.keys(KE_MAP) as string[]).find((k) => KE_MAP[k] === el) ?? '';
+    const bridgeEl = hurtEl ? SHENG_MAP[hurtEl] : '';
+    const hasBridge =
+      bridgeEl
+      && SHENG_MAP[bridgeEl] === el
+      && (chartStems.some((s) => STEM_ELEMENTS[s] === bridgeEl)
+        || chartBranches.some((b) => BRANCH_ELEMENTS[b] === bridgeEl));
+    const waterProtected =
+      el === 'water'
+      && (chartStems.includes('甲') || chartBranches.includes('寅') || hasGoldForWater);
+
+    let hurt = 0;
+    if (hurtByStems.length > 0) {
+      const unitPenalty = inCommand ? 6 : (hasBridge || waterProtected) ? 5 : 12;
+      hurt += hurtByStems.length * unitPenalty;
+      factors.push(
+        `受克评估：被天干${hurtByStems.join('、')}克制（${inCommand ? '月令当令轻制' : hasBridge || waterProtected ? '局中有通关/救护轻克' : '直克实质损力'} -${hurt}）`,
+      );
+    } else {
+      factors.push('无天干克制：此仪不受柱中明面克损');
+    }
+
+    // 夏月群火围熔衰金（全盘火燥成片、无申酉真金、无水湿土救护时重伤金仪）
+    if (
+      el === 'metal'
+      && ['巳', '午', '未'].includes(chart.month.branch)
+      && summerFireBranches >= 3
+      && mainBranches.length === 0
+      && !hasRealWater
+      && !chartBranches.some((b) => b === '丑' || b === '辰')
+    ) {
+      hurt += 24;
+      factors.push('火海熔金：地支火燥成片且全盘无水与湿土救护，孤金遭重熔（-24）');
+    }
+
     power -= hurt;
-    if (hurtBy > 0) factors.push(`受克损伤：被天干${hurtByStems.join('、')}克制（力量分 -${hurt}）`);
-    else factors.push('无天干克制：此仪不受柱中明面克损');
     const finalPower = Math.max(-30, Math.min(100, power));
     const verdict = finalPower >= 50 ? '气机深厚，此仪为格局得力支柱'
       : finalPower >= 20 ? '气机尚可，此仪有根须养护'
       : finalPower > 0 ? '气机偏薄，此仪须日时岁运补益'
       : '气机衰绝，此仪破缺，富贵根基大损';
-    const desc = `${yiStem}（${el}）${state}：落月令十二长生「${cs}」，${hurtBy > 0 ? `受天干${hurtByStems.join('、')}克制（-${hurt}）` : '无天干克制'}，气机力量分 ${finalPower}`;
-    return { stem: yiStem, state, power: finalPower, changSheng: cs, desc, role, verdict, factors };
+    const desc = `${yiStem}（${el}）${state}：落月令十二长生「${effCs}」，${hurt > 0 ? `受克损伤（-${hurt}）` : '无明显克损'}，气机力量分 ${finalPower}`;
+    return { stem: yiStem, state, power: finalPower, changSheng: effCs, desc, role, verdict, factors };
   };
   const yangYi = evalYi(taijiDef.yangYi, '阳仪 · 富气');
   const yinYi = evalYi(taijiDef.yinYi, '阴仪 · 贵气');
   evidence.push(`两仪评估：阳仪${yangYi.desc}；阴仪${yinYi.desc}`);
 
   // ⑥ 年月太极三态（完整/受损/绝境）
-  // 常规：阳仪彰显（≥50）+ 阴仪有根（≥40）→ 完整；全盘木火特例：阳仪彰显（≥60）+ 阴仪暗藏有气（≥20）且不受重创 → 亦完整
+  // 常规：阳仪有力（≥45）+ 阴仪有根（≥38）→ 完整；全盘木火特例：阳仪彰显（≥55）+ 阴仪暗藏有气（≥20）→ 亦完整
   let state: NianYueTaiJiResult['state'];
   let stateDesc: string;
-  const yangOk = yangYi.power >= 50;
-  const yinOk = yinYi.power >= 40;
+  const yangOk = yangYi.power >= 45;
+  const yinOk = yinYi.power >= 38;
   const yinRooted = yinYi.power >= 20 && yinYi.state === '暗藏';
-  if ((yangOk && yinOk) || (yangYi.power >= 60 && yinRooted)) {
+  if ((yangOk && yinOk) || (yangYi.power >= 55 && yinRooted)) {
     state = '两仪完整';
-    stateDesc = `${taijiDef.name}两仪保全：阳仪「${taijiDef.yangYi}」气机彰显，阴仪「${taijiDef.yinYi}」${yinOk ? '有根稳固' : '暗藏无伤'}——年月太极根基完好，格局成贵成富的基础具备。${yangYi.power >= 60 && yinRooted ? '（全盘木火格局特例：阳仪彰显、阴仪暗藏无伤，亦可成富贵。）' : ''}`;
+    stateDesc = `${taijiDef.name}两仪保全：阳仪「${taijiDef.yangYi}」气机有据，阴仪「${taijiDef.yinYi}」${yinOk ? '有根稳固' : '暗藏无伤'}——年月太极根基完好，格局成贵成富的基础具备。${yangYi.power >= 55 && yinRooted && !yinOk ? '（全盘木火格局特例：阳仪彰显、阴仪暗藏无伤，亦可成富贵。）' : ''}`;
   } else if (yangYi.power >= 20 && yinYi.power >= 20) {
     state = '两仪受损';
     stateDesc = `${taijiDef.name}两仪受损：阳仪「${taijiDef.yangYi}」${yangOk ? '尚可' : '气机偏弱'}，阴仪「${taijiDef.yinYi}」${yinOk ? '尚可' : '气机受抑'}——年月太极未绝，仍有富贵余地，成色取决于日时能否补救${yangYi.power < yinYi.power ? taijiDef.yangYi : taijiDef.yinYi}。`;
@@ -1399,7 +1513,13 @@ export function resolveDirection(
   modeOverride?: 'taiji' | 'binary',
 ): 'yang' | 'yin' {
   const source = resolveYongJiMode(chart.month.branch, modeOverride);
-  if (source === 'binary') return monthQi.usageDirection;
+  if (source === 'binary') {
+    // 申酉两月遇余热局（年月透丙丁或见巳午未）时大方向必须同步切换为用阴（金水），与逐字喜忌同源
+    if (chart.month.branch === '申' || chart.month.branch === '酉') {
+      return detectAutumnHotRound(chart) ? 'yin' : 'yang';
+    }
+    return monthQi.usageDirection;
+  }
   const tq = computeTaiJiQi(chart, monthQi);
   return tq.recommendedDirection === 'balanced' ? monthQi.usageDirection : tq.recommendedDirection;
 }
@@ -1457,8 +1577,9 @@ export function computeTaiJiQi(chart: BaZiChart, monthQi: MonthQiResult): TaiJiQ
     const monthPillar = idx === 1;   // 月令为权：月柱本气所在支及其藏干强度恒取 1.0
     const huiHuo = pillar.branch === '未' || pillar.branch === '戌';
 
+    // 晦火存金只作用于未/戌地支及其所藏干，不跨及同柱天干（避免年干庚因坐戌而被虚放大）
     const stStage = SHI_ER_CHANG_SHENG[monthBranch]?.[pillar.stem] ?? '—';
-    record(pos, pillar.stem, pillar.stemElement, '干', stStage, w.stem, false, huiHuo);
+    record(pos, pillar.stem, pillar.stemElement, '干', stStage, w.stem, false, false);
 
     const mainHidden = pillar.hiddenStems[0] ?? pillar.stem;
     const brStage = SHI_ER_CHANG_SHENG[monthBranch]?.[mainHidden] ?? '—';
@@ -1489,16 +1610,17 @@ export function computeTaiJiQi(chart: BaZiChart, monthQi: MonthQiResult): TaiJiQ
 
   let hardCondition = '';
   if (pair.mode === 'chun') {
-    // 春温局：木得火肯定、且不被金水阴气否定 → 成温（体阳用阴）；否则体阴用阳（见水/见金/木火肯定不足）
-    const chengWen = hasEl('wood') && hasEl('fire') && !hasEl('water') && !hasEl('metal');
+    // 春温局：木得火肯定、不被水否定，且金未落实年支 → 成温（体阳用阴）；否则体阴用阳
+    const yearHasMetal = chart.year.branchElement === 'metal';
+    const chengWen = hasEl('wood') && hasEl('fire') && !hasEl('water') && !yearHasMetal;
     recommendedDirection = chengWen ? 'yin' : 'yang';
     const reasons = [
       hasEl('water') ? '见水（余寒未退）' : '',
-      hasEl('metal') ? '见金（否定温气）' : '',
+      yearHasMetal ? '年支见金（否定温气）' : '',
       (!hasEl('wood') || !hasEl('fire')) ? '木火肯定不足' : '',
     ].filter(Boolean).join('、');
     hardCondition = chengWen
-      ? '成温：木得火肯定、且不被金水阴气否定 → 体阳用阴（大方向用阴）。'
+      ? '成温：木得火肯定、且未见水与年支落实之金 → 体阳用阴（大方向用阴）。'
       : `未成温：${reasons} → 体阴用阳（大方向用阳）。`;
   } else if (pair.mode === 'qiu') {
     // 秋凉局：先辨余热 / 成凉两局（判据：年月透丙丁、或支见巳午未 → 余热局）
@@ -1508,8 +1630,18 @@ export function computeTaiJiQi(chart: BaZiChart, monthQi: MonthQiResult): TaiJiQ
       ? '余热之局（火土旺、金难舒展）→ 用阴（金水泄土克火）。'
       : '成凉之局（金气得布、火无着力）→ 用阳（木火炼金）。';
   } else if (pair.mode === 'xia') {
-    hardCondition = '夏月阳极：首用庚金（阴方）平衡火势，水木须齐见辅之。';
+    // 夏月阳极当令：惟亥子水成势真灭月火时方转用阳；见庚金众乃用神富贵齐备，不可因庚众反置为忌或失方向
+    const realWaterBranches = pillars.filter((p) => p.branchElement === 'water').length;
+    if (recommendedDirection !== 'yin' && realWaterBranches < 2) {
+      recommendedDirection = 'yin';
+    }
+    hardCondition = '夏月阳极：首用庚金（阴方）平衡火势，水木齐见辅之；见庚众为用神得力。';
   } else if (pair.mode === 'dong') {
+    // 冬月阴极当令：惟巳午火成势暖透反燥时方议调阴；见火土止寒乃解冻得用，不可倒反为忌
+    const realFireBranches = pillars.filter((p) => p.branchElement === 'fire').length;
+    if (recommendedDirection !== 'yang' && realFireBranches < 2) {
+      recommendedDirection = 'yang';
+    }
     hardCondition = '冬月阴极：止寒为要，大方向用阳（阳土止寒、火生扶土气）。';
   } else if (pair.mode === 'rescueYang') {
     hardCondition = '戌月：甲木为第一用神，破阴显阳，大方向用阳。';
@@ -2464,6 +2596,8 @@ export function analyzeWealthNobility(
   overallLevel: string;   // 综合档位（保留旧五档名兼容，UI 可优先用分数）
   overallDesc: string;
 } {
+  // 全链路方向同源：即使外部直调本函数未传 effectiveMonthQi，也统一走 resolveDirection（含申酉余热局翻转）
+  const direction = resolveDirection(chart, monthQi);
   // 阳气状态→财富程度（木火为阳气，主富）
   const yangPower = elementPower.wood + elementPower.fire;
   // 阴气状态→贵气/地位程度（金水为阴气，主贵）
@@ -2471,15 +2605,7 @@ export function analyzeWealthNobility(
   // 阴阳力量差（取绝对值）
   const powerDiff = Math.abs(yangPower - yinPower);
   // 用神（月气指定需要补足的那一边）力量
-  const yongShenPower = monthQi.usageDirection === 'yin' ? yinPower : yangPower;
-  // 月气当令那一边的力量
-  const dangLingPower = monthQi.usageDirection === 'yin' ? yangPower : yinPower;
-  // 阴阳二气「显现」阈值判断
-  const yangApparent = yangPower >= 15;          // 阳有显现
-  const yangStronglyApparent = yangPower >= 28;  // 阳充分显现
-  const yinApparent = yinPower >= 15;            // 阴有显现
-  const yinStronglyApparent = yinPower >= 28;    // 阴充分显现
-  const yangAlmostInvisible = yangPower < 8;     // 阳几乎隐形
+  const yongShenPower = direction === 'yin' ? yinPower : yangPower;
   const yinAlmostInvisible = yinPower < 8;       // 阴几乎隐形
   const yangTotallyInvisible = yangPower <= 3;   // 阳彻底消失
   const yinTotallyInvisible = yinPower <= 3;     // 阴彻底消失
@@ -2496,174 +2622,96 @@ export function analyzeWealthNobility(
     qiConflict = '无冲突';
   }
 
-  // ================ 结构因子（v2.15 特殊格局通道）================
-  // 纯阴阳总量分不出贵贱（所有命盘都挤在 40~60% 的中段），补「透干」结构因子：
-  // 用神边天干透出（日主不算，日主是"我"不是"气"）+ 当令边力量足够 → 上格通道；
-  // 用神边既无力又无透 → 破格下压。只动两端，不动中段。
+  // ================ 纯阴阳结构因子（遵循单一判据源，严禁十神财星/身强弱越界直断富贵）================
   const YANG_STEMS = new Set(['甲', '乙', '丙', '丁']);
   const YIN_STEMS = new Set(['庚', '辛', '壬', '癸']);
   const stems3 = [chart.year.stem, chart.month.stem, chart.hour.stem];
-  const yongIsYang = monthQi.usageDirection === 'yang';
-  const yongTouCount = stems3.filter((s) => (yongIsYang ? YANG_STEMS : YIN_STEMS).has(s)).length; // 用神边透干数 0-3
-  const yinTouCount = stems3.filter((s) => YIN_STEMS.has(s)).length; // 阴干透出数 0-3（贵气专用：贵看阴，阳透干不给贵气加分）
-
-  // ================ 财星载体（财富分的前置校验，v2.16.4）================
-  // 财星五行 = 日主所克；财库按五行取库地
-  const STEM_TO_CAI_ELEMENT: Record<string, 'wood' | 'fire' | 'earth' | 'metal' | 'water'> = {
-    '甲': 'earth', '乙': 'earth',
-    '丙': 'metal', '丁': 'metal',
-    '戊': 'water', '己': 'water',
-    '庚': 'wood',  '辛': 'wood',
-    '壬': 'fire',  '癸': 'fire',
-  };
-  const CAI_KU_BRANCH: Record<string, string> = {
-    fire: '戌', metal: '丑', wood: '未', water: '辰', earth: '戌',
-  };
-  // 拱财对：两支同现夹拱出财星本气禄地（午/酉/卯/辰）
-  const GONG_CAI_PAIRS: Array<{ a: string; b: string; element: 'wood' | 'fire' | 'earth' | 'metal' | 'water' }> = [
-    { a: '寅', b: '戌', element: 'fire' },  // 寅戌拱午（火财）
-    { a: '申', b: '子', element: 'water' }, // 申子拱辰（水库，暗财需另断，暂作财星结构）
-    { a: '巳', b: '丑', element: 'metal' }, // 巳丑拱酉（金财）
-    { a: '亥', b: '未', element: 'wood' },  // 亥未拱卯（木财）
-  ];
-  const caiElement = STEM_TO_CAI_ELEMENT[chart.day.stem];
-  const caiKuBranch = CAI_KU_BRANCH[caiElement];
+  const allStems = [chart.year.stem, chart.month.stem, chart.day.stem, chart.hour.stem];
   const allBranches = [chart.year.branch, chart.month.branch, chart.day.branch, chart.hour.branch];
-  const caiKuCount = allBranches.filter((b) => b === caiKuBranch).length;
-  const hasGongCai = GONG_CAI_PAIRS.some(
-    (g) => g.element === caiElement && allBranches.includes(g.a) && allBranches.includes(g.b),
-  );
-  // 财星力量与透干数：透干只算年/月/时（日主不是财）
-  const caiPower = (elementPower as Record<string, number>)[caiElement] ?? 0;
-  const caiTouCount = stems3.filter((s) => STEM_ELEMENTS[s] === caiElement).length;
-  // 食伤力量（日主所生）：食伤生财是独立于木火占比的财富来源
-  const WO_SHENG: Record<string, string> = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
-  const shiShangElement = WO_SHENG[STEM_ELEMENTS[chart.day.stem]];
-  const shiShangPower = (elementPower as Record<string, number>)[shiShangElement] ?? 0;
+  const yongIsYang = direction === 'yang';
+  const yongTouCount = stems3.filter((s) => (yongIsYang ? YANG_STEMS : YIN_STEMS).has(s)).length; // 用神边透干数 0-3
+  const yinTouCount = stems3.filter((s) => YIN_STEMS.has(s)).length; // 阴干透出数 0-3（贵看阴，阳透干不直接加贵）
 
-  // ================ 财富分（0-100）：基础分 50，按阳气力量与用神情况浮动 ================
+  // ① 冬月真阳暖局（亥子丑月见火透出且有土止寒护阳，真阳调候得用）
+  const isWinterMonth = ['亥', '子', '丑'].includes(chart.month.branch);
+  const fireStemCount = allStems.filter((s) => STEM_ELEMENTS[s] === 'fire').length;
+  const earthWarmBranches = allBranches.filter((b) => b === '辰' || b === '未' || b === '戌').length;
+  const hasWinterWarmth =
+    isWinterMonth && (fireStemCount >= 1 || elementPower.fire >= 15) && (elementPower.earth >= 12 || earthWarmBranches >= 1);
+
+  // ② 暗火聚阳（如卯/寅配双戌拱午火阳库，且阴气显现不枯：纯阴阳拱合火之富基，不借十神名义）
+  const xuCount = allBranches.filter((b) => b === '戌').length;
+  const hasDarkYangArch =
+    xuCount >= 2
+    && ((allBranches.includes('寅') && allBranches.includes('戌'))
+      || (allBranches.includes('卯') && allBranches.includes('戌')));
+
+  // ================ 财富分（0-100）：阳气主富，须阴气收敛与二气调候 ================
   let wealthScore: number;
-  let wealthLevel: string;
-  let wealthDesc: string;
-  if (monthQi.usageDirection === 'yin') {
-    // 阳气旺（当令），财富基础好：阳 55→96，阳 35→76，阳 0→30
+  if (direction === 'yin') {
+    // 阳气当令：阳为富基，须阴不枯方能蓄财（55→88+，35→70~88，15→50~70，<15→10~50）
     if (yangPower >= 55) {
-      wealthScore = 90 + Math.min(10, Math.round((yangPower - 55) * 0.4));
-      wealthLevel = '富';
+      wealthScore = 88 + Math.min(8, Math.round((yangPower - 55) * 0.35));
     } else if (yangPower >= 35) {
-      wealthScore = 70 + Math.round((yangPower - 35) / (55 - 35) * 20); // 70~90
-      wealthLevel = '小康';
+      wealthScore = 70 + Math.round(((yangPower - 35) / 20) * 18);
     } else if (yangPower >= 15) {
-      wealthScore = 50 + Math.round((yangPower - 15) / (35 - 15) * 20); // 50~70
-      wealthLevel = '小康偏下';
+      wealthScore = 50 + Math.round(((yangPower - 15) / 20) * 20);
     } else {
-      wealthScore = Math.max(10, 30 + Math.round((yangPower - 15) * 1.2)); // 10~50
-      wealthLevel = '贫';
+      wealthScore = Math.max(10, 30 + Math.round((yangPower - 15) * 1.2));
     }
-  } else {
-    // 阴气旺（当令），阳气为用神：用神得力则高分
-    if (yangPower >= 35) {
-      wealthScore = 75 + Math.min(15, Math.round((yangPower - 35) * 0.5)); // 75~90
-      wealthLevel = '小康';
-    } else if (yangPower >= 20) {
-      wealthScore = 58 + Math.round((yangPower - 20) / (35 - 20) * 17); // 58~75
-      wealthLevel = '小康偏下';
-    } else if (yangPower >= 10) {
-      wealthScore = 40 + Math.round((yangPower - 10) / (20 - 10) * 18); // 40~58
-      wealthLevel = '偏贫';
-    } else {
-      wealthScore = Math.max(8, 40 - Math.round((10 - yangPower) * 2.5)); // 8~40
-      wealthLevel = '贫';
+    // 阴阳兼济且用神（阴）透干能存 → 富局通道
+    if (yangPower >= 45 && yongTouCount >= 1 && yinPower >= 15) {
+      wealthScore = Math.max(wealthScore, 85 + Math.min(11, Math.round((yangPower - 45) * 0.3)));
     }
-  }
-  // ---- 特殊格局通道：上格（阳有力 + 用神边有透干）----
-  if (monthQi.usageDirection === 'yin') {
-    // 阳当令：富看阳；阳足且用神（阴）有透干能存 → 富
-    if (yangPower >= 45 && yongTouCount >= 1) {
-      wealthScore = Math.max(wealthScore, 85 + Math.min(12, Math.round((yangPower - 45) * 0.3)));
-      wealthLevel = '富';
+    // 暗火聚阳且阴气护局
+    if (hasDarkYangArch && yinPower >= 25) {
+      wealthScore = Math.max(wealthScore, 85);
     }
-    // 破格：用神（阴）极弱且无透干 → 富基虚设
-    if (yongShenPower < 14 && yongTouCount === 0) {
+    if (elementPower.water < 3 && yinPower < 35 && !hasDarkYangArch) {
+      // 春夏燥局全盘枯水且阴气不足，阳燥难守，封顶中下小康偏上
+      wealthScore = Math.min(wealthScore, 68);
+    }
+    // 破格：用神（阴）极弱且无透干
+    if (yongShenPower < 14 && yongTouCount === 0 && !hasDarkYangArch) {
       wealthScore = Math.min(wealthScore, 45);
-      wealthLevel = yangPower >= 25 ? '偏贫' : '贫';
     }
   } else {
-    // 阳为用神：阳有力且透干两位 → 富通道
-    if (yangPower >= 30 && yongTouCount >= 2) {
-      wealthScore = Math.max(wealthScore, 82 + Math.min(13, Math.round((yangPower - 30) * 0.4)));
-      wealthLevel = '富';
+    // 阴气当令：阳气为用神，得力破寒则富
+    if (yangPower >= 35) {
+      wealthScore = 75 + Math.min(15, Math.round((yangPower - 35) * 0.5));
+    } else if (yangPower >= 20) {
+      wealthScore = 58 + Math.round(((yangPower - 20) / 15) * 17);
+    } else if (yangPower >= 10) {
+      wealthScore = 40 + Math.round(((yangPower - 10) / 10) * 18);
+    } else {
+      wealthScore = Math.max(8, 40 - Math.round((10 - yangPower) * 2.5));
     }
-    // 破格：阳用神极弱且无透 → 压到贫
-    if (yangPower < 14 && yongTouCount === 0) {
+    // 上格：阳透两位得力，或冬月真阳暖局（火透＋土止寒，破冬寒立成富基）
+    if (yangPower >= 30 && yongTouCount >= 2 && yinPower >= 15) {
+      wealthScore = Math.max(wealthScore, 84 + Math.min(11, Math.round((yangPower - 30) * 0.4)));
+    } else if (hasWinterWarmth && yangPower >= 25) {
+      wealthScore = Math.max(wealthScore, 82 + Math.min(8, Math.round((yangPower - 25) * 0.4)));
+    }
+    if (hasDarkYangArch && yinPower >= 25) {
+      wealthScore = Math.max(wealthScore, 85);
+    }
+    // 破格：孤阴无阳或阳用神极弱且无透
+    if (yangTotallyInvisible || (yangPower < 14 && yongTouCount === 0 && !hasDarkYangArch)) {
       wealthScore = Math.min(wealthScore, 40);
-      wealthLevel = '贫';
     }
   }
-  // ================ 财星载体校验（v2.16.4）================
-  // 财富分此前只按木火占比给分，导致「无财星」的命局也被抬到小康。
-  // 规则：财星无气、或财不透且无库 → 整体降一档；财库三重 → 财聚于库，至少富裕下段
-  const dropWealthOneTier = (s: number): number => {
-    if (s >= 90) return 89;
-    if (s >= 80) return 79;
-    if (s >= 55) return 54;
-    if (s >= 42) return 41;
-    if (s >= 28) return 27;
-    if (s >= 12) return 11;
-    return 0;
-  };
-  if (caiKuCount >= 3) {
-    wealthScore = Math.max(wealthScore, 85);
-    wealthLevel = '富';
-  } else if (caiPower < 5 || (caiTouCount === 0 && caiKuCount === 0)) {
-    wealthScore = Math.min(wealthScore, dropWealthOneTier(wealthScore));
-    wealthLevel = wealthScore >= 80 ? '富'
-      : wealthScore >= 55 ? '小康'
-      : wealthScore >= 42 ? '小康偏下'
-      : wealthScore >= 28 ? '偏贫' : '贫';
-    // 财星本身偏弱（<20）且无透无库：不能判到富裕，压回中上上沿
-    if (caiPower < 20) wealthScore = Math.min(wealthScore, 79);
+  // 全局阴阳共性约束：无论用阴用阳，孤阳无阴敛（全盘阴气隐形）皆阳亢散气难聚富
+  if (yinTotallyInvisible) {
+    wealthScore = Math.min(wealthScore, 36);
+  } else if (yinAlmostInvisible) {
+    wealthScore = Math.min(wealthScore, 42);
   }
-  // 身弱财旺：财星 ≥25 且日主在四支无根 → 富屋贫人，压到贫困上沿
-  const dayElement = STEM_ELEMENTS[chart.day.stem];
-  const hasDayRoot = allBranches.some((b) => BRANCH_ELEMENTS[b] === dayElement);
-  if (caiPower >= 25 && !hasDayRoot) {
-    wealthScore = Math.min(wealthScore, 27);
-    wealthLevel = '贫';
-  }
-  // 食伤生财：食伤极旺（≥40%）且财星有气（≥10%）且财为用神 → 至少富裕下段
-  // 覆盖「不看木火、靠输出转化为财」的命局（如金水食伤生水财、婚姻/经营得财）
-  const caiIsUseful = monthQi.usageDirection === 'yang'
-    ? (caiElement === 'wood' || caiElement === 'fire')
-    : (caiElement === 'metal' || caiElement === 'water');
-  if (shiShangPower >= 40 && caiPower >= 10 && caiIsUseful) {
-    wealthScore = Math.max(wealthScore, 82);
-    wealthLevel = '富';
-  }
-  // 全站封顶 96（2026-10-29 用户校订：人类世界没有 100 分，分布应为函数型长尾）
   wealthScore = Math.max(0, Math.min(96, wealthScore));
-
-  // ================ 暗财通道（v2.15.2）：拱财 + 财库重叠 ================
-  // 反例：1970-03-23 20:00 坤造 庚戌/己卯/壬寅/庚戌 —— 实际 A8.5 大富，
-  //       但原局火仅 7 分、天干 0 透阳，基础通道只给小康 80 分。
-  //       真正的财富信号在：寅戌拱午（暗拱正财禄地）+ 双戌财库（火库重叠）+ 卯戌合火。
-  //       此类「财不透干、拱库重叠」属隐性大富，现有纯力量/纯透干算法无法识别。
-  //
-  // 触发条件（同时满足）：
-  //   ① 日主财星之库（火库戌、金库丑、木库未、水库辰）在原局出现 ≥2 次
-  //   ② 存在拱财结构（寅戌拱午、申子拱辰、巳丑拱酉、亥未拱卯 —— 三合缺中神、中神即财星本气禄地）
-  //   ③ 财星五行为原局用神（避免忌神财库被误判为富）
-  // 命中即推至富裕下段（88 分），不越过富豪级（≥90 需透干/格局另证）
-  // v2.16.4：财为忌神时不再直接否掉，降权至 80；财透干亦可作为「暗财可见」的替代结构
-  const caiIsYongShen = monthQi.usageDirection === 'yang'
-    ? (caiElement === 'wood' || caiElement === 'fire')
-    : (caiElement === 'metal' || caiElement === 'water');
-  if (caiKuCount >= 2 && (hasGongCai || caiTouCount >= 1)) {
-    wealthScore = Math.max(wealthScore, caiIsYongShen ? 88 : 80);
-    wealthLevel = '富';
-  }
-  // 暗财通道命中后重新封顶（防御，88 不会越界）
-  wealthScore = Math.max(0, Math.min(96, wealthScore));
+  const wealthLevel = wealthScore >= 80 ? '富'
+    : wealthScore >= 55 ? '小康'
+    : wealthScore >= 42 ? '小康偏下'
+    : wealthScore >= 28 ? '偏贫' : '贫';
+  let wealthDesc: string;
 
   const wealthScoreText = `【${wealthScore}分】`;
   wealthDesc = `${wealthScoreText} 阳气(木火)${yangPower}% — ${
@@ -2674,60 +2722,51 @@ export function analyzeWealthNobility(
     : '财运较薄，求财辛苦，容易因财生灾，宜守不宜攻，以稳为主、勤勉积福。'
   }`;
 
-  // ================ 贵气分（0-100）：基础分 50，按阴气力量与用神情况浮动 ================
+  // ================ 贵气分（0-100）：阴气主贵，须透干立格与阳气支撑 ================
   let nobilityScore: number;
   let nobilityLevel: string;
-  let nobilityDesc: string;
-  if (monthQi.usageDirection === 'yang') {
-    // 阴气旺（当令），贵气基础好：阴 50→76，封顶 82（「贵」必须走透干结构通道，纯力量堆不出贵，2026-10-29 收紧）
+  if (direction === 'yang') {
+    // 阴气当令：贵看阴；阴足且阴干透出两位以上 → 贵通道
     if (yinPower >= 50) {
       nobilityScore = Math.min(82, 76 + Math.round((yinPower - 50) * 0.3));
       nobilityLevel = '平常';
     } else if (yinPower >= 30) {
-      nobilityScore = 68 + Math.round((yinPower - 30) / (50 - 30) * 14); // 68~82
+      nobilityScore = 68 + Math.round(((yinPower - 30) / 20) * 14);
       nobilityLevel = '平常';
     } else if (yinPower >= 15) {
-      nobilityScore = 50 + Math.round((yinPower - 15) / (30 - 15) * 18); // 50~68
+      nobilityScore = 50 + Math.round(((yinPower - 15) / 15) * 18);
       nobilityLevel = '平常';
     } else {
-      nobilityScore = Math.max(12, 32 + Math.round((yinPower - 15) * 1.3)); // 12~50
+      nobilityScore = Math.max(12, 32 + Math.round((yinPower - 15) * 1.3));
       nobilityLevel = '偏弱';
     }
-  } else {
-    // 阳气旺（当令），阴气为用神
-    if (yinPower >= 30) {
-      nobilityScore = Math.min(82, 74 + Math.round((yinPower - 30) * 0.25)); // 74~82，「贵」走下方结构通道
-      nobilityLevel = '平常';
-    } else if (yinPower >= 15) {
-      nobilityScore = 56 + Math.round((yinPower - 15) / (30 - 15) * 18); // 56~74
-      nobilityLevel = '平常';
-    } else if (yinPower >= 8) {
-      nobilityScore = 40 + Math.round((yinPower - 8) / (15 - 8) * 16); // 40~56
-      nobilityLevel = '偏弱';
-    } else {
-      nobilityScore = Math.max(10, 40 - Math.round((8 - yinPower) * 3)); // 10~40
-      nobilityLevel = '偏弱';
-    }
-  }
-  // ---- 特殊格局通道：上格（阴有力 + 用神边有透干）----
-  if (monthQi.usageDirection === 'yang') {
-    // 阴当令：贵看阴；阴足且阴干透出两位以上 → 贵通道（2026-10-29 收紧：阳透干不算，单透阴干也不够，防 #8 类过火）
-    if (yinPower >= 42 && yinTouCount >= 2) {
-      nobilityScore = Math.max(nobilityScore, 85 + Math.min(12, Math.round((yinPower - 42) * 0.3)));
+    if (yinPower >= 42 && yinTouCount >= 2 && yangPower >= 15) {
+      nobilityScore = Math.max(nobilityScore, 85 + Math.min(11, Math.round((yinPower - 42) * 0.3)));
       nobilityLevel = '贵';
     }
-    // 破格：用神（阳）极弱且无透干
-    if (yongShenPower < 14 && yongTouCount === 0) {
-      nobilityScore = Math.min(nobilityScore, 45);
+    if ((yongShenPower < 14 && yongTouCount === 0 && !hasDarkYangArch) || yangTotallyInvisible) {
+      nobilityScore = Math.min(nobilityScore, 48);
       nobilityLevel = '偏弱';
     }
   } else {
     // 阴为用神：阴有力且透干两位 → 贵通道
-    if (yinPower >= 26 && yongTouCount >= 2) {
-      nobilityScore = Math.max(nobilityScore, 82 + Math.min(13, Math.round((yinPower - 26) * 0.4)));
+    if (yinPower >= 30) {
+      nobilityScore = Math.min(82, 74 + Math.round((yinPower - 30) * 0.25));
+      nobilityLevel = '平常';
+    } else if (yinPower >= 15) {
+      nobilityScore = 56 + Math.round(((yinPower - 15) / 15) * 18);
+      nobilityLevel = '平常';
+    } else if (yinPower >= 8) {
+      nobilityScore = 40 + Math.round(((yinPower - 8) / 7) * 16);
+      nobilityLevel = '偏弱';
+    } else {
+      nobilityScore = Math.max(10, 40 - Math.round((8 - yinPower) * 3));
+      nobilityLevel = '偏弱';
+    }
+    if (yinPower >= 26 && yongTouCount >= 2 && elementPower.water >= 3) {
+      nobilityScore = Math.max(nobilityScore, 82 + Math.min(12, Math.round((yinPower - 26) * 0.4)));
       nobilityLevel = '贵';
     }
-    // 破格：阴用神极弱且无透 → 压到偏弱
     if (yinPower < 14 && yongTouCount === 0) {
       nobilityScore = Math.min(nobilityScore, 40);
       nobilityLevel = '偏弱';
@@ -2735,7 +2774,7 @@ export function analyzeWealthNobility(
   }
   nobilityScore = Math.max(0, Math.min(96, nobilityScore));
   const nobilityScoreText = `【${nobilityScore}分】`;
-  nobilityDesc = `${nobilityScoreText} 阴气(金水)${yinPower}% — ${
+  const nobilityDesc = `${nobilityScoreText} 阴气(金水)${yinPower}% — ${
     nobilityScore >= 85 ? '贵气深厚，社会地位较高，名声好，受人尊敬，事业成就突出。'
     : nobilityScore >= 70 ? '贵气不错，事业有位可得，名声良好，宜持续精进。'
     : nobilityScore >= 60 ? '贵气中等，事业平稳，职位不高但稳定，需靠个人努力。'
@@ -2744,8 +2783,6 @@ export function analyzeWealthNobility(
   }`;
 
   // ================ 格局综合分 overallScore（0-100，金字塔分布） ================
-  // 设计目标：高分极难（S+ 仅约 0.1%），S 也稀少；大部分命盘落在 35~75 的中间带。
-  // 采用「乘性压制」：多个条件必须同时满足才能逼近满分，避免"加性堆分"导致人人满分。
   // 1) 阴阳平衡分（0-55）：balanceRatio = 1 - |阳-阴|/100，幂次 3 放大"完美平衡"的稀有性
   const balanceRatio = Math.max(0, 1 - powerDiff / 100);
   const balanceScore = 55 * Math.pow(balanceRatio, 3);
@@ -2760,16 +2797,16 @@ export function analyzeWealthNobility(
   else conflictScore = 0;
   let overallScore = Math.round(balanceScore + yongScore + conflictScore);
 
-  // 年月太极修正（纯数值加减 ±12）：两仪完整加分、两仪绝境扣分
+  // 年月太极温和修正（±10 内，不以单模块压垮全盘）
   let taijiNote = '';
   if (nianYueTaiJi) {
     const t = nianYueTaiJi;
     if (t.state === '两仪完整') {
-      const delta = Math.min(12, Math.round(12 - overallScore / 15)); // 越高分加越少，防溢出
+      const delta = Math.min(10, Math.round(10 - overallScore / 18));
       overallScore = Math.min(100, overallScore + delta);
       taijiNote = `年月太极：${t.taijiName}（两仪完整，综合分 +${delta}）。${t.verdict}`;
     } else if (t.state === '两仪绝境') {
-      const delta = Math.min(18, Math.round(10 + overallScore / 20)); // 越低分扣越狠
+      const delta = Math.min(10, Math.round(6 + overallScore / 25));
       overallScore = Math.max(0, overallScore - delta);
       taijiNote = `年月太极：${t.taijiName}（两仪绝境，综合分 −${delta}）。${t.verdict}`;
     } else {
@@ -2778,7 +2815,7 @@ export function analyzeWealthNobility(
   }
   overallScore = Math.max(0, Math.min(96, overallScore));
 
-  // 综合档位（兼容旧命名，UI 可直接用 overallScore 渲染进度条；随新分布收紧）
+  // 综合档位（兼容旧命名，UI 可直接用 overallScore 渲染进度条）
   let overallLevel: string;
   if (overallScore >= 90) overallLevel = '夯';
   else if (overallScore >= 72) overallLevel = '人上人';
@@ -2786,7 +2823,7 @@ export function analyzeWealthNobility(
   else if (overallScore >= 36) overallLevel = '拉';
   else overallLevel = '拉完了';
 
-  const apparentReport = `阳气(木火)${yangPower}%，阴气(金水)${yinPower}%，月气当令${monthQi.usageDirection === 'yin' ? '阳' : '阴'}，需补${monthQi.usageDirection === 'yin' ? '阴(金水)' : '阳(木火)'}用神力量${yongShenPower}%，气息${qiConflict}`;
+  const apparentReport = `阳气(木火)${yangPower}%，阴气(金水)${yinPower}%，月气当令${direction === 'yin' ? '阳' : '阴'}，需补${direction === 'yin' ? '阴(金水)' : '阳(木火)'}用神力量${yongShenPower}%，气息${qiConflict}`;
 
   const overallScoreText = `【${overallScore}分】`;
   let overallDescHead = '';
@@ -2821,21 +2858,22 @@ export function analyzeSevenCategories(
   shiShen: string;
   interaction: string;
 } {
+  const direction = resolveDirection(chart, monthQi);
   // 阴阳二气（融合《自然易鉴》第三章第四节·阴阳对应人事万象：心性/事业/健康/祸福）
   // 土不再作为中性第三元：木火与阳土（戊辰未）归阳，金水与阴土（己丑戌）归阴
   const { yang: yangPower, yin: yinPower } = calculateYinYangBalance(chart);
 
   // 对应心性（第三章第四节·一）
   const xinXing = yangPower >= yinPower
-    ? (monthQi.usageDirection === 'yin'
+    ? (direction === 'yin'
         ? '阳旺本当令（老阳/夏月），阳燥无制则急躁冲动、刚愎自用、张扬跋扈、容易得罪人；若得阴气（金水）平衡，则性格开朗、正直善良、积极上进、光明磊落、有担当格局。'
         : '阳旺得用为吉：性格开朗、正直善良、积极上进、光明磊落、待人热忱、有担当、有格局。')
-    : (monthQi.usageDirection === 'yang'
+    : (direction === 'yang'
         ? '阴旺本当令（老阴/冬月），阴寒无制则多疑多虑、消极自卑、懦弱纠结、城府过深、心胸狭隘；若得阳气（火土）平衡，则心思细腻、沉稳睿智、隐忍有度、思虑周全、低调务实、善于谋划。'
         : '阴旺得用为吉：心思细腻、沉稳睿智、隐忍有度、思虑周全、低调务实、善于谋划。');
 
   // 对应事业（第三章第四节·二）
-  const shiYe = monthQi.usageDirection === 'yang' || yangPower < 45
+  const shiYe = direction === 'yang' || yangPower < 45
     ? '阳暖格局渐成，适合公职、管理、教育、传媒、公开行业，利扬名、利仕途、利贵人帮扶（《自然易鉴》：阳为显、为明、为主动，阳吉则事业扬名、贵人相助、人前显贵）。'
     : '阴润格局渐成，适合技术、金融、策划、幕后、精密行业，利深耕、利偏财、利专业成事（《自然易鉴》：阴为隐、为暗、为被动，阴吉则根基稳固、财运内敛、私下得福）。';
 
@@ -2846,7 +2884,7 @@ export function analyzeSevenCategories(
       ? '阴寒无制倾向：易患肾虚、脾胃、风湿、气血不足、妇科、寒湿淤堵之疾（《自然易鉴》：阴寒无制，水寒土冻、木火无力）。'
       : '阴阳相对平衡，健康总体平顺，注意保养即可。';
 
-  const yinYang = `命局阳气占约 ${yangPower}%，阴气占约 ${yinPower}%（木火与阳土归阳，金水与阴土归阴）。月气${monthQi.yangState === 'strong' ? '阳气盛旺' : '阴气强盛'}，以${monthQi.usageDirection === 'yin' ? '阴气' : '阳气'}为用神平衡阴阳。《自然易鉴》：阳气主富，阴气主贵，二者平衡则吉，失衡则凶。—— 心性倾向：${xinXing} 事业适配：${shiYe} 健康提示：${jianKangHint}`;
+  const yinYang = `命局阳气占约 ${yangPower}%，阴气占约 ${yinPower}%（木火与阳土归阳，金水与阴土归阴）。月气${direction === 'yin' ? '阳气偏盛（或余热主导）' : '阴气偏盛（或寒凉主导）'}，以${direction === 'yin' ? '阴气' : '阳气'}为用神平衡阴阳。《自然易鉴》：阳气主富，阴气主贵，二者平衡则吉，失衡则凶。—— 心性倾向：${xinXing} 事业适配：${shiYe} 健康提示：${jianKangHint}`;
 
   // 五行内容
   const fiveElements = `五行力量分布：木(${elementPower.wood}%)、火(${elementPower.fire}%)、土(${elementPower.earth}%)、金(${elementPower.metal}%)、水(${elementPower.water}%)。${elementPower.wood + elementPower.fire > 50 ? '木火偏旺，阳气充足。' : ''}${elementPower.metal + elementPower.water > 50 ? '金水偏旺，阴气强盛。' : ''}土主承载运化，占比 ${elementPower.earth}%。土多则塞，土少则松。`;
@@ -3955,16 +3993,31 @@ export function analyzeJiXiong(
       if (TIAN_GAN_WU_HE[wuHeKey] || TIAN_GAN_WU_HE[wuHeRev]) {
         const hua = TIAN_GAN_WU_HE[wuHeKey] || TIAN_GAN_WU_HE[wuHeRev];
         const ordered = TIAN_GAN_WU_HE[wuHeKey] ? wuHeKey : wuHeRev;
-        const beneficial = (yongJi.usefulElements.includes(SHENG_ORDER[a as keyof typeof SHENG_ORDER] === b ? b : SHENG_ORDER[b as keyof typeof SHENG_ORDER] === a ? a : STEM_ELEMENTS[ordered[0]]));
+        // 正确映射天干五合所化五行（此前误用天干字查 SHENG_ORDER 导致永久 undefined）
+        const WU_HE_ELEMENT: Record<string, string> = {
+          甲己: 'earth',
+          乙庚: 'metal',
+          丙辛: 'water',
+          丁壬: 'wood',
+          戊癸: 'fire',
+        };
+        const huaEl = WU_HE_ELEMENT[ordered] ?? STEM_ELEMENTS[ordered[0]];
+        const beneficial = huaEl === 'earth'
+          ? (yongJi.allStemMarks['戊'] === 'useful' || yongJi.allStemMarks['己'] === 'useful')
+          : yongJi.usefulElements.includes(huaEl);
+        const harmful = huaEl === 'earth'
+          ? (yongJi.allStemMarks['戊'] === 'taboo' && yongJi.allStemMarks['己'] === 'taboo')
+          : yongJi.tabooElements.includes(huaEl);
         // 仅 i < j 时推一次避免重复，然后两边都加
         if (i < j) {
-          const score = 2;
-          const nature: '吉' | '凶' | '平' = beneficial ? '吉' : '平';
+          // 合化本身无吉凶，必须落到阴阳用忌方记分（老高规则：非用神时不虚加正分）
+          const score = beneficial ? 2 : harmful ? -1 : 0;
+          const nature: '吉' | '凶' | '平' = beneficial ? '吉' : harmful ? '凶' : '平';
           stemSourcesByPos[stemPosNames[i]].push({
             type: '五合',
             from: `${stemPosNames[j]}${b}`,
             to: `${stemPosNames[i]}${a}`,
-            detail: `天干五合：${ordered}${hua}（${stemPosNames[i]}${a} 与 ${stemPosNames[j]}${b} 相合）。合主凝聚、有情、羁绊，化出五行若为用神则吉上加吉。`,
+            detail: `天干五合：${ordered}${hua}（${stemPosNames[i]}${a} 与 ${stemPosNames[j]}${b} 相合）。${beneficial ? '合化之气为本盘所用，有情凝聚为吉。' : harmful ? '合化偏忌神方向，须防羁绊助忌。' : '合化中性，合主有情凝聚，吉凶看岁运引动。'}`,
             score,
             nature,
           });
@@ -3972,7 +4025,7 @@ export function analyzeJiXiong(
             type: '五合',
             from: `${stemPosNames[i]}${a}`,
             to: `${stemPosNames[j]}${b}`,
-            detail: `天干五合：${ordered}${hua}（${stemPosNames[j]}${b} 与 ${stemPosNames[i]}${a} 相合）。合主有情、缘分、人事聚合，原局合多则人缘聚、贵气凝。`,
+            detail: `天干五合：${ordered}${hua}（${stemPosNames[j]}${b} 与 ${stemPosNames[i]}${a} 相合）。${beneficial ? '合化之气为本盘所用，凝聚助吉。' : harmful ? '合化偏忌神方向，宜审慎待之。' : '合主有情、人事聚合，原局合多主交际广。'}`,
             score,
             nature,
           });
@@ -4253,15 +4306,17 @@ export function analyzeJiXiong(
     const quan = group.name;
     const el = group.element;
     const beneficial = yongJi.usefulElements.includes(el);
-    const nature: '吉' | '凶' | '平' = beneficial ? '吉' : '平';
-    const score = 3 * (beneficial ? 1 : 0.5);
+    const harmful = yongJi.tabooElements.includes(el);
+    const nature: '吉' | '凶' | '平' = beneficial ? '吉' : harmful ? '凶' : '平';
+    // 三合本身无吉凶，必须落到用忌；用神成局记正分，忌神成局扣分，中性不虚加分
+    const score = beneficial ? 3 : harmful ? -2 : 0;
     idxs.forEach((idx) => {
       const others = idxs.filter((x) => x !== idx).map((x) => branchPosNames[x] + branches[x]).join('、');
       branchSourcesByPos[branchPosNames[idx]].push({
         type: '地支三合',
         from: others,
         to: branchPosNames[idx] + branches[idx],
-        detail: `地支三合：${present}${quan}三合局（三全成局），汇聚${elementName(el)}之气。${beneficial ? '成局所化为本盘用神，富贵可期，朋友合力、合作成事、贵人众多。' : '虽非用神，亦主人缘聚、事有合和之象。'}三合本身不带吉凶，须落到阴阳才算。`,
+        detail: `地支三合：${present}${quan}三合局（三全成局），汇聚${elementName(el)}之气。${beneficial ? '成局所化为本盘用神，富贵可期，朋友合力、合作成事、贵人众多。' : harmful ? '成局所化偏于本盘忌神方向，须防负向聚势叠加。' : '中性之气，主人缘聚、事有合和之象。'}三合本身不带吉凶，须落到阴阳才算。`,
         score,
         nature,
       });
@@ -4275,15 +4330,16 @@ export function analyzeJiXiong(
     const quan = group.name;
     const el = group.element;
     const beneficial = yongJi.usefulElements.includes(el);
-    const nature: '吉' | '凶' | '平' = beneficial ? '吉' : '平';
-    const score = 4 * (beneficial ? 1 : 0.5); // 三会力最大
+    const harmful = yongJi.tabooElements.includes(el);
+    const nature: '吉' | '凶' | '平' = beneficial ? '吉' : harmful ? '凶' : '平';
+    const score = beneficial ? 4 : harmful ? -3 : 0; // 三会力最大，非用非忌时不虚加分
     idxs.forEach((idx) => {
       const others = idxs.filter((x) => x !== idx).map((x) => branchPosNames[x] + branches[x]).join('、');
       branchSourcesByPos[branchPosNames[idx]].push({
         type: '地支三会',
         from: others,
         to: branchPosNames[idx] + branches[idx],
-        detail: `地支三会：${present}${quan}三会局（三全，力量最大），汇聚一方纯${elementName(el)}之气，能彻底改变原局旺衰。${beneficial ? '成局所化为本盘用神，富贵绵长；若为忌神则灾祸连绵' : '力大势强，吉凶看引动'}。三会本身不带吉凶，须落到阴阳才算。`,
+        detail: `地支三会：${present}${quan}三会局（三全，力量最大），汇聚一方纯${elementName(el)}之气，能彻底改变原局旺衰。${beneficial ? '成局所化为本盘用神，富贵绵长' : harmful ? '成局所化偏忌神，须慎其势' : '力大势强，吉凶看引动'}。三会本身不带吉凶，须落到阴阳才算。`,
         score,
         nature,
       });
@@ -4298,7 +4354,7 @@ export function analyzeJiXiong(
     char: string,
     el: string,
     sources: JiXiongSource[],
-    baseLabelKey: string,
+    rawMark?: XiJiMark,
   ): CharJiXiong => {
     const total = sources.reduce((s, x) => s + x.score, 0);
     let jiXiong: CharJiXiong['jiXiong'] = '平';
@@ -4306,8 +4362,9 @@ export function analyzeJiXiong(
     else if (total >= 2) jiXiong = '吉';
     else if (total <= -5) jiXiong = '大凶';
     else if (total <= -2) jiXiong = '凶';
-    const baseSource = sources.find((s) => s.type === '用忌');
-    const useJiBase = (baseSource?.detail.includes('用神') ? '用神' : baseSource?.detail.includes('忌神') ? '忌神' : '中性') as CharJiXiong['useJiBase'];
+    // 直接读取用忌真源标记，不再从说明文案做子串匹配（防止引用名句含「用神」二字导致全员误归用神）
+    const useJiBase: CharJiXiong['useJiBase'] =
+      rawMark === 'useful' ? '用神' : rawMark === 'taboo' ? '忌神' : '中性';
     // 汇总吉凶来源类型的简要描述
     const favorable = sources.filter((s) => s.nature === '吉' && s.type !== '用忌').map((s) => s.type);
     const harmful = sources.filter((s) => s.nature === '凶' && s.type !== '用忌').map((s) => s.type);
@@ -4333,10 +4390,10 @@ export function analyzeJiXiong(
   };
 
   const stemsResult = stemPosNames.map((pos, idx) =>
-    calc(pos, stems[idx], stemEls[idx], stemSourcesByPos[pos], pos),
+    calc(pos, stems[idx], stemEls[idx], stemSourcesByPos[pos], yongJi.stemMarks[pos]),
   );
   const branchesResult = branchPosNames.map((pos, idx) =>
-    calc(pos, branches[idx], branchEls[idx], branchSourcesByPos[pos], pos),
+    calc(pos, branches[idx], branchEls[idx], branchSourcesByPos[pos], yongJi.branchMarks[pos]),
   );
 
   const overall = `原局八字（4 天干 + 4 地支）共 8 字，其吉凶各自有出处。吉字多（用神得力、合多冲少、刑害少）则原局根基牢固、福禄深厚；凶字多（忌神成党、冲刑害重）则原局多舛，需待大运流年引动用神来救。逐个查阅下方「来源明细」即可知晓：每一吉从何来（谁生谁合谁助）、每一凶从何起（谁冲谁克谁刑谁害）。`;

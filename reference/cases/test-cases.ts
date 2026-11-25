@@ -41,16 +41,16 @@ export interface PaiPanTestCase {
 }
 
 export const PAI_PAN_TEST_CASES: PaiPanTestCase[] = [
-  // ========= 【节气边界案例·1969立冬】排盘失误修复用例 =========
+  // ========= 【节气边界案例·1969立冬】排盘校验用例 =========
   {
-    name: '节气边界·1969年11月7日·立冬前·甲戍月',
+    name: '节气边界·1969年11月7日·立冬前·甲戌月',
     birth: { year: 1969, month: 11, day: 7, hour: 22, minute: 10, gender: '男' },
     expected: {
       yearStem: '己', yearBranch: '酉',
       monthStem: '甲', monthBranch: '戌',
-      dayStem: '壬', dayBranch: '申',
-      hourStem: '辛', hourBranch: '亥',
-      monthTermReason: '1969立冬交节 ≈22:12~22:13，22:10 仍属戌月（甲戍）',
+      dayStem: '丙', dayBranch: '戌',
+      hourStem: '己', hourBranch: '亥',
+      monthTermReason: '1969立冬交节 ≈22:12~22:13，22:10 仍属戌月（甲戌）；真太阳 22:12 为亥时',
     },
   },
   {
@@ -59,9 +59,9 @@ export const PAI_PAN_TEST_CASES: PaiPanTestCase[] = [
     expected: {
       yearStem: '己', yearBranch: '酉',
       monthStem: '乙', monthBranch: '亥',
-      dayStem: '壬', dayBranch: '申',
-      hourStem: '辛', hourBranch: '亥',
-      monthTermReason: '1969立冬交节 ≈22:12~22:13，22:15 进入亥月（乙亥）',
+      dayStem: '丙', dayBranch: '戌',
+      hourStem: '己', hourBranch: '亥',
+      monthTermReason: '1969立冬交节 ≈22:12~22:13，22:15 进入亥月（乙亥）；真太阳 22:17 为亥时',
     },
   },
 
@@ -72,20 +72,20 @@ export const PAI_PAN_TEST_CASES: PaiPanTestCase[] = [
     expected: {
       yearStem: '庚', yearBranch: '午',
       monthStem: '己', monthBranch: '卯',
-      dayStem: '庚', dayBranch: '午',
-      hourStem: '辛', hourBranch: '巳',
+      dayStem: '己', dayBranch: '丑',
+      hourStem: '己', hourBranch: '巳',
       monthTermReason: '惊蛰 3.6 → 清明 4.5 之间属卯月',
     },
   },
   {
-    name: '常规·冬至子月子时',
+    name: '常规·冬至子月子时（北京 0:10 真太阳回拨至 23:56 早子时）',
     birth: { year: 1984, month: 12, day: 22, hour: 0, minute: 10, gender: '女' },
     expected: {
       yearStem: '甲', yearBranch: '子',
       monthStem: '丙', monthBranch: '子',
-      dayStem: '庚', dayBranch: '午',
+      dayStem: '庚', dayBranch: '寅',
       hourStem: '丙', hourBranch: '子',
-      monthTermReason: '大雪 12.7 → 小寒 次年1.6 之间属子月',
+      monthTermReason: '大雪 12.7 → 小寒 次年1.6 之间属子月；真太阳 23:56 为早子时进次日庚寅日',
     },
   },
 ];

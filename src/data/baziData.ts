@@ -2415,9 +2415,8 @@ const ZHUZI_XIJI_REF_DATA: Record<string, ZhuZiMonthRef> = {
   },
 };
 
-// 申月「余热 / 成凉」两局落定表：hot=余热局、cool=成凉局。
-// 依据逐字资料库中「成凉局…为喜／余热局…为忌」的明确表述逐个落定，
-// 资料未给方向者（戊己癸辰未戌亥子丑，土双面或须看态势）不入表，保留 dai 以条件说明呈现。
+// 申酉月「余热 / 成凉」两局落定表：hot=余热局、cool=成凉局。
+// 依据逐字资料库中两局相反取用的明确表述落定；土性及条件未定之字（戊己辰未戌亥丑等）不入表，保留 dai 或条件说明。
 const ZHUZI_ROUND_MARKS_DATA: Record<string, Record<string, { hot: ZhuZiMark; cool: ZhuZiMark }>> = {
   申: {
     甲: { hot: 'ji', cool: 'xi' }, 乙: { hot: 'ji', cool: 'xi' },
@@ -2427,6 +2426,16 @@ const ZHUZI_ROUND_MARKS_DATA: Record<string, Record<string, { hot: ZhuZiMark; co
     寅: { hot: 'ji', cool: 'xi' }, 卯: { hot: 'ji', cool: 'xi' },
     巳: { hot: 'ji', cool: 'xi' }, 午: { hot: 'ji', cool: 'xi' },
     申: { hot: 'xi', cool: 'ji' }, 酉: { hot: 'xi', cool: 'ji' },
+  },
+  酉: {
+    甲: { hot: 'ji', cool: 'xi' }, 乙: { hot: 'ji', cool: 'xi' },
+    丙: { hot: 'ji', cool: 'xi' }, 丁: { hot: 'ji', cool: 'xi' },
+    庚: { hot: 'xi', cool: 'ji' }, 辛: { hot: 'xi', cool: 'ji' },
+    壬: { hot: 'xi', cool: 'ji' }, 癸: { hot: 'xi', cool: 'ji' },
+    寅: { hot: 'ji', cool: 'xi' }, 卯: { hot: 'ji', cool: 'xi' },
+    巳: { hot: 'ji', cool: 'xi' }, 午: { hot: 'ji', cool: 'xi' },
+    申: { hot: 'xi', cool: 'ji' }, 酉: { hot: 'xi', cool: 'ji' },
+    子: { hot: 'xi', cool: 'ji' },
   },
 };
 export const ZHUZI_XIJI_CFG = {

@@ -46,11 +46,11 @@ function toJulianDay(year: number, month: number, day: number, hour: number = 0,
 
   let y = year;
   let m = month;
-  // 处理日期溢出
-  const dateObj = new Date(year, month - 1, adjDay);
-  y = dateObj.getFullYear();
-  m = dateObj.getMonth() + 1;
-  const d = dateObj.getDate();
+  // 处理日期溢出：纯 UTC 日历运算，避免运行环境本地时区/夏令时干扰
+  const dateObj = new Date(Date.UTC(year, month - 1, adjDay));
+  y = dateObj.getUTCFullYear();
+  m = dateObj.getUTCMonth() + 1;
+  const d = dateObj.getUTCDate();
 
   if (m <= 2) {
     y -= 1;
